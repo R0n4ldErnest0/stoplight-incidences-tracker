@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
+import DashboardView from './components/DashboardView.jsx'
 import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
 import AuthModal from './components/AuthModal.jsx'
@@ -88,6 +89,12 @@ export default function App() {
           >
             📋 Lista
           </button>
+          <button
+            className={view === 'dashboard' ? 'viewtab active' : 'viewtab'}
+            onClick={() => setView('dashboard')}
+          >
+            📊 Transparencia
+          </button>
         </div>
         {authState.user ? (
           <div className="auth-status">
@@ -142,8 +149,10 @@ export default function App() {
           <div className="list-empty">Cargando incidencias…</div>
         ) : view === 'map' ? (
           <MapView incidents={visible} onSelect={setSelectedId} />
-        ) : (
+        ) : view === 'list' ? (
           <IncidentList incidents={visible} onSelect={setSelectedId} />
+        ) : (
+          <DashboardView incidents={incidents} onSelect={setSelectedId} />
         )}
 
         <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
