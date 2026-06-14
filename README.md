@@ -50,41 +50,39 @@ src/
   App.jsx               Layout, filtros, estadísticas, modo autoridad
 ```
 
-## Camino a producción (Supabase)
+## Conectar Supabase (ya está cableado)
 
-`src/data/store.js` define la interfaz del repositorio. Para producción:
+La capa de datos elige el backend automáticamente: **si hay credenciales de
+Supabase en `.env`, usa Supabase; si no, usa `localStorage` (demo)**. La UI no
+cambia. El indicador arriba a la derecha muestra cuál está activo
+(🟢 Supabase / 🟡 Demo local).
 
-1. Crear proyecto en Supabase, habilitar **PostGIS**.
-2. Tabla `incidents` (con columna `geography(Point)` para consultas por cercanía).
-3. **Storage** para las fotos (hoy se guardan como dataURL).
-4. **Auth** + Row Level Security: lectura pública; escritura de estado solo para
-   rol `reviewer` (autoridad).
-5. Reemplazar el cuerpo de cada función de `store.js` por llamadas a Supabase,
-   manteniendo las mismas firmas. La UI no cambia.
+Para activar Supabase:
 
-Esquema sugerido:
+1. Crea un proyecto en [supabase.com](https://supabase.com) (región US, más cerca de Perú).
+2. En **SQL Editor**, pega y ejecuta [`supabase/schema.sql`](supabase/schema.sql)
+   (crea tablas, PostGIS, historial automático, RLS y el bucket de fotos).
+3. En **Project Settings → API**, copia el **Project URL** y la **anon public key**.
+4. Pégalas en `.env` (basado en `.env.example`):
+   ```
+   VITE_SUPABASE_URL=https://tu-proyecto.supabase.co
+   VITE_SUPABASE_ANON_KEY=tu-anon-public-key
+   ```
+5. Reinicia `npm run dev`. El indicador debe cambiar a **🟢 Supabase**.
 
-```sql
-create table incidents (
-  id uuid primary key default gen_random_uuid(),
-  title text,
-  description text,
-  fault_type text,
-  district text,
-  geom geography(Point) not null,
-  status text not null default 'reported',
-  photo_url text,
-  created_at timestamptz not null default now()
-);
-create table status_changes (
-  id uuid primary key default gen_random_uuid(),
-  incident_id uuid references incidents(id),
-  status text not null,
-  note text,
-  changed_by uuid,
-  at timestamptz not null default now()
-);
-```
+### Archivos clave
+- `src/data/store.js` — selecciona el backend y expone la interfaz async.
+- `src/data/localStore.js` — backend localStorage (demo).
+- `src/data/supabaseStore.js` — backend Supabase (consultas + subida de fotos a Storage).
+- `src/data/supabaseClient.js` — crea el cliente y detecta si está configurado.
+- `supabase/schema.sql` — esquema completo para pegar en Supabase.
+
+### Seguridad de "modo autoridad"
+`schema.sql` trae políticas RLS en **dos fases**:
+- **Fase 1 (ahora):** cualquiera puede actualizar estados — sólo para probar la
+  conexión. ⚠ Inseguro.
+- **Fase 2:** con Supabase Auth + rol `reviewer`, sólo autoridades verificadas
+  cambian estados. Las políticas ya están escritas (comentadas) en el archivo.
 
 ## Ideas siguientes
 

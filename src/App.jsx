@@ -3,26 +3,49 @@ import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
-import { listIncidents, getStats } from './data/store.js'
+import AuthModal from './components/AuthModal.jsx'
+import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
+import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER } from './constants.js'
+
+const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
 export default function App() {
   const [incidents, setIncidents] = useState([])
+  const [stats, setStats] = useState(EMPTY_STATS)
   const [selectedId, setSelectedId] = useState(null)
   const [showReport, setShowReport] = useState(false)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [showAuth, setShowAuth] = useState(false)
   const [filter, setFilter] = useState('all')
   const [view, setView] = useState('map') // 'map' | 'list'
+  const [loading, setLoading] = useState(true)
+  const [dataError, setDataError] = useState('')
+  const [authState, setAuthState] = useState({ user: null, isReviewer: false, loading: true })
 
-  function refresh() {
-    setIncidents(listIncidents())
+  async function refresh() {
+    try {
+      const [list, s] = await Promise.all([listIncidents(), getStats()])
+      setIncidents(list)
+      setStats(s)
+      setDataError('')
+    } catch (err) {
+      console.error(err)
+      setDataError(err.message || 'No se pudieron cargar las incidencias.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
-    refresh()
+    initAuth().then(() => {
+      setAuthState(getAuthState())
+      refresh()
+    })
+    const unsub = onAuthChange((state) => {
+      setAuthState(state)
+    })
+    return unsub
   }, [])
-
-  const stats = useMemo(() => getStats(), [incidents])
 
   const visible = useMemo(() => {
     if (filter === 'all') return incidents
@@ -41,6 +64,16 @@ export default function App() {
             <small>Mapa ciudadano de semáforos malogrados · Lima</small>
           </div>
         </div>
+        <span
+          className="source-pill"
+          title={
+            DATA_SOURCE === 'supabase'
+              ? 'Conectado a Supabase (base de datos real)'
+              : 'Datos locales de demostración (este navegador)'
+          }
+        >
+          {DATA_SOURCE === 'supabase' ? '🟢 Supabase' : '🟡 Demo local'}
+        </span>
         <div className="spacer" />
         <div className="viewtabs">
           <button
@@ -56,15 +89,29 @@ export default function App() {
             📋 Lista
           </button>
         </div>
-        <label className="toggle">
-          <input
-            type="checkbox"
-            checked={isAdmin}
-            onChange={(e) => setIsAdmin(e.target.checked)}
-          />
-          Modo autoridad
-        </label>
+        {authState.user ? (
+          <div className="auth-status">
+            <span className="auth-email">{authState.user.email}</span>
+            {authState.isReviewer && <span className="badge" style={{ background: '#22c55e', marginLeft: 6 }}>
+              <span className="dot" />
+              Revisor
+            </span>}
+            <button className="btn btn-sm" onClick={() => setShowAuth(true)} style={{ marginLeft: 8 }}>
+              Cerrar sesión
+            </button>
+          </div>
+        ) : (
+          <button className="btn btn-sm btn-primary" onClick={() => setShowAuth(true)}>
+            🔒 Modo autoridad
+          </button>
+        )}
       </header>
+
+      {dataError && (
+        <div className="warn" style={{ margin: '10px 16px 0' }}>
+          {dataError} (revisa tu conexión / credenciales de Supabase)
+        </div>
+      )}
 
       <div className="stats">
         <button
@@ -91,7 +138,9 @@ export default function App() {
       </div>
 
       <div className="content">
-        {view === 'map' ? (
+        {loading ? (
+          <div className="list-empty">Cargando incidencias…</div>
+        ) : view === 'map' ? (
           <MapView incidents={visible} onSelect={setSelectedId} />
         ) : (
           <IncidentList incidents={visible} onSelect={setSelectedId} />
@@ -115,9 +164,17 @@ export default function App() {
         {selected && (
           <IncidentDetail
             incident={selected}
-            isAdmin={isAdmin}
+            isAdmin={authState.isReviewer}
             onClose={() => setSelectedId(null)}
             onChanged={() => refresh()}
+          />
+        )}
+
+        {showAuth && (
+          <AuthModal
+            user={authState.user}
+            isReviewer={authState.isReviewer}
+            onClose={() => setShowAuth(false)}
           />
         )}
       </div>

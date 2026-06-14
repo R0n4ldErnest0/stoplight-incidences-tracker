@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import { LIMA_CENTER, FAULT_TYPES, DISTRICTS } from '../constants.js'
@@ -37,9 +37,24 @@ export default function ReportForm({ onClose, onCreated }) {
   const [description, setDescription] = useState('')
   const [locating, setLocating] = useState(false)
   const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [nearby, setNearby] = useState([])
   const fileRef = useRef(null)
 
-  const nearby = pos ? findNearby(pos, 60) : []
+  // Busca reportes cercanos cada vez que cambia la ubicación elegida.
+  useEffect(() => {
+    let active = true
+    if (!pos) {
+      setNearby([])
+      return
+    }
+    findNearby(pos, 60)
+      .then((found) => active && setNearby(found))
+      .catch(() => active && setNearby([]))
+    return () => {
+      active = false
+    }
+  }, [pos])
 
   function useMyLocation() {
     setError('')
@@ -69,7 +84,7 @@ export default function ReportForm({ onClose, onCreated }) {
     reader.readAsDataURL(file)
   }
 
-  function submit(e) {
+  async function submit(e) {
     e.preventDefault()
     setError('')
     if (!pos) {
@@ -80,16 +95,23 @@ export default function ReportForm({ onClose, onCreated }) {
       setError('Una foto es obligatoria para que el reporte sea accionable.')
       return
     }
-    const created = createIncident({
-      title,
-      description,
-      faultType,
-      district,
-      lat: pos.lat,
-      lng: pos.lng,
-      photo,
-    })
-    onCreated(created)
+    setSubmitting(true)
+    try {
+      const created = await createIncident({
+        title,
+        description,
+        faultType,
+        district,
+        lat: pos.lat,
+        lng: pos.lng,
+        photo,
+      })
+      onCreated(created)
+    } catch (err) {
+      console.error(err)
+      setError('No se pudo publicar el reporte: ' + (err.message || 'error desconocido'))
+      setSubmitting(false)
+    }
   }
 
   return (
@@ -181,8 +203,8 @@ export default function ReportForm({ onClose, onCreated }) {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block">
-            Publicar reporte
+          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            {submitting ? 'Publicando…' : 'Publicar reporte'}
           </button>
           <div className="help" style={{ marginTop: 8 }}>
             Tu reporte será público en el mapa para dar visibilidad y exigir su reparación.

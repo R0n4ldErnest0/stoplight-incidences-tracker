@@ -16,10 +16,15 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
   const age = ageDays(incident)
   const gmaps = `https://www.google.com/maps/search/?api=1&query=${incident.lat},${incident.lng}`
 
-  function setStatus(status) {
+  async function setStatus(status) {
     const note = isAdmin ? 'Actualizado por la autoridad' : ''
-    const updated = updateStatus(incident.id, status, note)
-    onChanged(updated)
+    try {
+      const updated = await updateStatus(incident.id, status, note)
+      onChanged(updated)
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo actualizar el estado: ' + (err.message || 'error'))
+    }
   }
 
   return (
