@@ -530,6 +530,27 @@ button {
   box-shadow: 0 2px 6px rgba(0,0,0,0.4);
 }
 
+/* ---------- Mobile topbar ---------- */
+/* The topbar holds brand + source pill + 3 view tabs + auth button. On a phone
+   these overflow a single nowrap row and the tabs get clipped off-screen, so we
+   wrap and drop the tabs onto their own full-width row. */
+@media (max-width: 640px) {
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 10px 12px;
+  }
+  .topbar .spacer { display: none; }
+  .brand { flex: 1 1 auto; min-width: 0; font-size: 16px; }
+  .viewtabs {
+    order: 10;          /* push to the wrapped second row */
+    flex-basis: 100%;   /* force its own line */
+    margin-right: 0;
+    overflow-x: auto;   /* fallback if even the tabs don't fit */
+  }
+  .viewtab { flex: 1 0 auto; text-align: center; white-space: nowrap; }
+}
+
 @media (max-width: 480px) {
   .brand small { display: none; }
 }
