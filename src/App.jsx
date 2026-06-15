@@ -2,12 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import DashboardView from './components/DashboardView.jsx'
+import AboutView from './components/AboutView.jsx'
 import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
-import { STATUSES, STATUS_ORDER } from './constants.js'
+import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 
 const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
@@ -18,7 +19,8 @@ export default function App() {
   const [showReport, setShowReport] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [filter, setFilter] = useState('all')
-  const [view, setView] = useState('map') // 'map' | 'list'
+  const [dateRange, setDateRange] = useState('all')
+  const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard' | 'about'
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
   const [authState, setAuthState] = useState({ user: null, isReviewer: false, loading: true })
@@ -48,10 +50,19 @@ export default function App() {
     return unsub
   }, [])
 
+  // Filtro por fecha (antigüedad del reporte). Se aplica antes que el de estado
+  // y también alimenta el panel de transparencia.
+  const dateFiltered = useMemo(() => {
+    const days = DATE_RANGES.find((r) => r.key === dateRange)?.days
+    if (!days) return incidents
+    const cutoff = Date.now() - days * 86400000
+    return incidents.filter((i) => new Date(i.createdAt).getTime() >= cutoff)
+  }, [incidents, dateRange])
+
   const visible = useMemo(() => {
-    if (filter === 'all') return incidents
-    return incidents.filter((i) => i.status === filter)
-  }, [incidents, filter])
+    if (filter === 'all') return dateFiltered
+    return dateFiltered.filter((i) => i.status === filter)
+  }, [dateFiltered, filter])
 
   const selected = incidents.find((i) => i.id === selectedId) || null
 
@@ -95,6 +106,12 @@ export default function App() {
           >
             📊 Transparencia
           </button>
+          <button
+            className={view === 'about' ? 'viewtab active' : 'viewtab'}
+            onClick={() => setView('about')}
+          >
+            ℹ️ Acerca de
+          </button>
         </div>
         {authState.user ? (
           <div className="auth-status">
@@ -120,29 +137,44 @@ export default function App() {
         </div>
       )}
 
-      <div className="stats">
-        <button
-          className="stat"
-          style={{ borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }}
-          onClick={() => setFilter('all')}
-        >
-          <b>{stats.total}</b> Total
-        </button>
-        {STATUS_ORDER.map((key) => (
+      {view !== 'about' && (
+        <div className="stats">
           <button
-            key={key}
             className="stat"
-            style={{ borderColor: filter === key ? STATUSES[key].color : 'var(--border)' }}
-            onClick={() => setFilter(key)}
+            style={{ borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }}
+            onClick={() => setFilter('all')}
           >
-            <b style={{ color: STATUSES[key].color }}>{stats.byStatus[key] || 0}</b>
-            {STATUSES[key].label}
+            <b>{stats.total}</b> Total
           </button>
-        ))}
-        {stats.avgDays != null && (
-          <div className="stat"><b>{stats.avgDays}</b> días prom. a resolver</div>
-        )}
-      </div>
+          {STATUS_ORDER.map((key) => (
+            <button
+              key={key}
+              className="stat"
+              style={{ borderColor: filter === key ? STATUSES[key].color : 'var(--border)' }}
+              onClick={() => setFilter(key)}
+            >
+              <b style={{ color: STATUSES[key].color }}>{stats.byStatus[key] || 0}</b>
+              {STATUSES[key].label}
+            </button>
+          ))}
+          {stats.avgDays != null && (
+            <div className="stat"><b>{stats.avgDays}</b> días prom. a resolver</div>
+          )}
+          <div className="stat-spacer" />
+          <label className="date-filter" title="Filtrar por antigüedad del reporte">
+            🗓️
+            <select
+              className="date-select"
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+            >
+              {DATE_RANGES.map((r) => (
+                <option key={r.key} value={r.key}>{r.label}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
 
       <div className="content">
         {loading ? (
@@ -151,13 +183,17 @@ export default function App() {
           <MapView incidents={visible} onSelect={setSelectedId} />
         ) : view === 'list' ? (
           <IncidentList incidents={visible} onSelect={setSelectedId} />
+        ) : view === 'dashboard' ? (
+          <DashboardView incidents={dateFiltered} onSelect={setSelectedId} />
         ) : (
-          <DashboardView incidents={incidents} onSelect={setSelectedId} />
+          <AboutView />
         )}
 
-        <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
-          + Reportar semáforo
-        </button>
+        {view !== 'about' && (
+          <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
+            + Reportar semáforo
+          </button>
+        )}
 
         {showReport && (
           <ReportForm
