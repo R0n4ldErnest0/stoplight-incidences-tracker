@@ -78,11 +78,16 @@ Para activar Supabase:
 - `supabase/schema.sql` — esquema completo para pegar en Supabase.
 
 ### Seguridad de "modo autoridad"
-`schema.sql` trae políticas RLS en **dos fases**:
-- **Fase 1 (ahora):** cualquiera puede actualizar estados — sólo para probar la
-  conexión. ⚠ Inseguro.
-- **Fase 2:** con Supabase Auth + rol `reviewer`, sólo autoridades verificadas
-  cambian estados. Las políticas ya están escritas (comentadas) en el archivo.
+`schema.sql` aplica por defecto las políticas RLS **seguras (Fase 2)**: sólo
+usuarios autenticados con rol `reviewer` (asignado en `app_metadata` por un
+admin / `service_role`, no auto-asignable) pueden cambiar estados. La creación de
+reportes y la lectura del mapa siguen siendo públicas. La **Fase 1** (cualquiera
+actualiza, ⚠ insegura, sólo para pruebas iniciales) queda comentada en el archivo
+como rollback.
+
+Para crear un revisor: en Supabase, **Authentication → Users → Add user**, y
+luego asígnale el rol con la `service_role` key:
+`app_metadata: { "role": "reviewer" }`.
 
 ## Ideas siguientes
 

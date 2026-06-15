@@ -79,30 +79,36 @@ create policy "ciudadanía crea incidents" on public.incidents
 -- ---------------------------------------------------------------------------
 -- "MODO AUTORIDAD": quién puede cambiar el estado de una incidencia.
 --
--- FASE 1 (AHORA, sin login todavía): permitir actualizar a cualquiera para
--- poder probar el flujo completo. ⚠ INSEGURO — sólo para pruebas iniciales.
+-- FASE 2 (ACTIVA): sólo usuarios autenticados con rol 'reviewer' pueden
+-- actualizar estados y escribir en el historial. El rol vive en app_metadata y
+-- sólo lo asigna un admin (service_role); el usuario NO puede auto-asignárselo.
+-- (La creación de reportes y la lectura siguen siendo públicas — ver arriba.)
+--
+-- Limpia cualquier resto de la FASE 1 antes de crear las políticas seguras.
 drop policy if exists "fase1 cualquiera actualiza" on public.incidents;
-create policy "fase1 cualquiera actualiza" on public.incidents
-  for update using (true) with check (true);
-
 drop policy if exists "fase1 cualquiera escribe historial" on public.status_changes;
-create policy "fase1 cualquiera escribe historial" on public.status_changes
-  for insert with check (true);
 
--- FASE 2: si quieres activar seguridad de autenticación, corre esto:
--- (borra las políticas de FASE 1 y ejecuta estas)
+drop policy if exists "autoridad actualiza" on public.incidents;
+create policy "autoridad actualiza" on public.incidents
+  for update to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer')
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
 
--- drop policy if exists "fase1 cualquiera actualiza" on public.incidents;
--- drop policy if exists "fase1 cualquiera escribe historial" on public.status_changes;
+drop policy if exists "autoridad escribe historial" on public.status_changes;
+create policy "autoridad escribe historial" on public.status_changes
+  for insert to authenticated
+  with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
+
+-- FASE 1 (ROLLBACK, ⚠ INSEGURO): permite que cualquiera actualice estados, sin
+-- login. Útil sólo para probar el flujo al inicio. Para volver a ella, borra las
+-- políticas "autoridad ..." de arriba y descomenta esto:
 --
--- create policy "autoridad actualiza" on public.incidents
---   for update to authenticated
---   using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer')
---   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
---
--- create policy "autoridad escribe historial" on public.status_changes
---   for insert to authenticated
---   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
+-- drop policy if exists "autoridad actualiza" on public.incidents;
+-- drop policy if exists "autoridad escribe historial" on public.status_changes;
+-- create policy "fase1 cualquiera actualiza" on public.incidents
+--   for update using (true) with check (true);
+-- create policy "fase1 cualquiera escribe historial" on public.status_changes
+--   for insert with check (true);
 -- ---------------------------------------------------------------------------
 
 -- 6) Storage: bucket público para las fotos de los reportes ------------------

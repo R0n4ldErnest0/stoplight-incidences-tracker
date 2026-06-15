@@ -1,16 +1,16 @@
 // Sección "Acerca de": qué es el proyecto, por qué existe, cómo funciona,
 // quién lo hizo y hacia dónde va.
 //
-// 👉 EDITA este bloque con tus datos reales. Son los únicos placeholders.
+// 👉 Datos del creador. Deja en '' cualquier enlace que no quieras mostrar.
 const CREATOR = {
-  name: 'Ronald Ernesto', // TODO: confirma cómo quieres que aparezca tu nombre
+  name: 'Ronald Ernesto',
   role: 'Creador y desarrollador',
   bio:
     'Construí SemáforoAlerta para que reportar un semáforo malogrado en Lima ' +
     'deje de ser un agujero negro y se convierta en algo público y rastreable.',
-  // Deja en '' los que no quieras mostrar.
+  github: 'https://github.com/R0n4ldErnest0',
+  // Vacíos a propósito: no publicamos contacto personal sin tu confirmación.
   email: '', // p.ej. 'tucorreo@example.com'
-  github: '', // p.ej. 'https://github.com/R0n4ldErnest0'
   linkedin: '', // p.ej. 'https://linkedin.com/in/...'
   site: '', // p.ej. 'https://tusitio.com'
 }
