@@ -106,12 +106,6 @@ export default function App() {
           >
             📊 Transparencia
           </button>
-          <button
-            className={view === 'about' ? 'viewtab active' : 'viewtab'}
-            onClick={() => setView('about')}
-          >
-            ℹ️ Acerca de
-          </button>
         </div>
         {authState.user ? (
           <div className="auth-status">
