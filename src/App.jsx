@@ -18,9 +18,10 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(null)
   const [showReport, setShowReport] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
+  const [showAbout, setShowAbout] = useState(false)
   const [filter, setFilter] = useState('all')
   const [dateRange, setDateRange] = useState('all')
-  const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard' | 'about'
+  const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard'
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
   const [authState, setAuthState] = useState({ user: null, isReviewer: false, loading: true })
@@ -76,16 +77,16 @@ export default function App() {
             <small>Mapa ciudadano de semáforos malogrados · Lima</small>
           </div>
         </div>
-        <span
-          className="source-pill"
-          title={
-            DATA_SOURCE === 'supabase'
-              ? 'Conectado a Supabase (base de datos real)'
-              : 'Datos locales de demostración (este navegador)'
-          }
-        >
-          {DATA_SOURCE === 'supabase' ? '🟢 Supabase' : '🟡 Demo local'}
-        </span>
+        {/* En modo real no mostramos detalles de infraestructura al ciudadano;
+            solo señalamos cuando son datos de demostración (no compartidos). */}
+        {DATA_SOURCE !== 'supabase' && (
+          <span
+            className="source-pill"
+            title="Datos de demostración en este navegador — no se comparten ni son reales"
+          >
+            🟡 Demo
+          </span>
+        )}
         <div className="spacer" />
         <div className="viewtabs">
           <button
@@ -107,6 +108,14 @@ export default function App() {
             📊 Transparencia
           </button>
         </div>
+        <button
+          className="icon-btn about-trigger"
+          onClick={() => setShowAbout(true)}
+          title="Acerca de SemáforoAlerta"
+          aria-label="Acerca de"
+        >
+          ⓘ
+        </button>
         {authState.user ? (
           <div className="auth-status">
             <span className="auth-email">{authState.user.email}</span>
@@ -131,8 +140,7 @@ export default function App() {
         </div>
       )}
 
-      {view !== 'about' && (
-        <div className="stats">
+      <div className="stats">
           <button
             className="stat"
             style={{ borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }}
@@ -168,7 +176,6 @@ export default function App() {
             </select>
           </label>
         </div>
-      )}
 
       <div className="content">
         {loading ? (
@@ -177,17 +184,13 @@ export default function App() {
           <MapView incidents={visible} onSelect={setSelectedId} />
         ) : view === 'list' ? (
           <IncidentList incidents={visible} onSelect={setSelectedId} />
-        ) : view === 'dashboard' ? (
-          <DashboardView incidents={dateFiltered} onSelect={setSelectedId} />
         ) : (
-          <AboutView />
+          <DashboardView incidents={dateFiltered} onSelect={setSelectedId} />
         )}
 
-        {view !== 'about' && (
-          <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
-            + Reportar semáforo
-          </button>
-        )}
+        <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
+          + Reportar semáforo
+        </button>
 
         {showReport && (
           <ReportForm
@@ -215,6 +218,20 @@ export default function App() {
             isReviewer={authState.isReviewer}
             onClose={() => setShowAuth(false)}
           />
+        )}
+
+        {showAbout && (
+          <div className="overlay" onClick={() => setShowAbout(false)}>
+            <div className="drawer" onClick={(e) => e.stopPropagation()}>
+              <div className="drawer-head">
+                <h2>Acerca de</h2>
+                <button className="icon-btn" onClick={() => setShowAbout(false)} aria-label="Cerrar">×</button>
+              </div>
+              <div className="drawer-body">
+                <AboutView />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

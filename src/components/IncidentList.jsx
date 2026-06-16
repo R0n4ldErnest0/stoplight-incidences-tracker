@@ -40,6 +40,9 @@ export default function IncidentList({ incidents, onSelect }) {
                 ) : (
                   <span className="card-thumb-empty">🚦</span>
                 )}
+                {inc.photos?.length > 1 && (
+                  <span className="thumb-count">📷 {inc.photos.length}</span>
+                )}
               </div>
               <div className="card-body">
                 <div className="card-top">

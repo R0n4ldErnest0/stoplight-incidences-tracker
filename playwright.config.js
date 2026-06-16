@@ -17,7 +17,9 @@ export default defineConfig({
     { name: 'mobile', use: { ...devices['iPhone 13'] } },
   ],
   webServer: {
-    command: 'npm run dev',
+    // `--mode test` carga .env.test (placeholders) por encima de .env, forzando
+    // el modo demo (localStorage + seed) aunque haya credenciales reales en .env.
+    command: 'npm run dev -- --mode test',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
     timeout: 60000,

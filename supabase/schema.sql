@@ -23,9 +23,14 @@ create table if not exists public.incidents (
               generated always as (st_setsrid(st_makepoint(lng, lat), 4326)::geography) stored,
   status      text not null default 'reported'
               check (status in ('reported','acknowledged','in_progress','resolved','duplicate')),
-  photo_url   text,
+  photo_url   text,                       -- foto principal (compatibilidad)
+  photos      text[] not null default '{}', -- todas las fotos del reporte (URLs públicas)
   created_at  timestamptz not null default now()
 );
+
+-- Para bases ya creadas antes de soportar varias fotos: agrega la columna.
+alter table public.incidents
+  add column if not exists photos text[] not null default '{}';
 
 create index if not exists incidents_status_idx on public.incidents (status);
 create index if not exists incidents_geom_idx on public.incidents using gist (geom);

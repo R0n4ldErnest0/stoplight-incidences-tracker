@@ -1,19 +1,30 @@
 import { test, expect } from '@playwright/test'
 
-test('loads in demo mode with the seeded map', async ({ page }) => {
+test('loads in demo mode with the seeded data', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/SemáforoAlerta/)
-  // No Supabase creds locally -> falls back to the local demo backend.
-  await expect(page.getByText('Demo local')).toBeVisible()
+  // La config de Playwright fuerza el modo demo -> aparece la etiqueta "Demo".
+  await expect(page.getByText(/Demo/)).toBeVisible()
 })
 
-test('can switch between all views including About', async ({ page }) => {
+test('can switch between the three main views', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: /Lista/ }).click()
+  await expect(page.getByText(/incidencia\(s\)/)).toBeVisible()
   await page.getByRole('button', { name: /Transparencia/ }).click()
-  await page.getByRole('button', { name: /Acerca de/ }).click()
-  await expect(page.getByText('Quién está detrás')).toBeVisible()
   await page.getByRole('button', { name: /Mapa/ }).click()
+})
+
+test('opens the "Acerca de" modal from the topbar', async ({ page }) => {
+  await page.goto('/')
+  // Acerca de ya no es una pestaña: es un modal que abre el ícono ⓘ.
+  await page.getByRole('button', { name: 'Acerca de' }).click()
+  await expect(page.getByRole('heading', { name: 'Acerca de' })).toBeVisible()
+  await expect(page.getByText('Quién está detrás')).toBeVisible()
+  // El enlace de LinkedIn ahora es público.
+  await expect(page.getByRole('link', { name: /LinkedIn/ })).toBeVisible()
+  await page.getByRole('button', { name: 'Cerrar' }).click()
+  await expect(page.getByRole('heading', { name: 'Acerca de' })).toBeHidden()
 })
 
 test('date-range filter is available', async ({ page }) => {
@@ -24,8 +35,11 @@ test('date-range filter is available', async ({ page }) => {
   await expect(dateSelect).toHaveValue('7d')
 })
 
-test('opens the report form', async ({ page }) => {
+test('report form leads with photo capture options', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: /Reportar sem/ }).click()
   await expect(page.getByRole('heading', { name: 'Reportar semáforo' })).toBeVisible()
+  // Foto primero: cámara y galería como acciones explícitas.
+  await expect(page.getByRole('button', { name: /Tomar foto/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Subir de galería/ })).toBeVisible()
 })

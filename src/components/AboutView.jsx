@@ -9,9 +9,9 @@ const CREATOR = {
     'Construí SemáforoAlerta para que reportar un semáforo malogrado en Lima ' +
     'deje de ser un agujero negro y se convierta en algo público y rastreable.',
   github: 'https://github.com/R0n4ldErnest0',
+  linkedin: 'https://www.linkedin.com/in/ronald-ernesto-soto-nicoll/',
   // Vacíos a propósito: no publicamos contacto personal sin tu confirmación.
   email: '', // p.ej. 'tucorreo@example.com'
-  linkedin: '', // p.ej. 'https://linkedin.com/in/...'
   site: '', // p.ej. 'https://tusitio.com'
 }
 
@@ -66,10 +66,10 @@ function CreatorLinks({ creator }) {
   )
 }
 
+// Se muestra dentro de un modal (drawer), no como vista a pantalla completa.
 export default function AboutView() {
   return (
-    <div className="dash-wrap">
-      <div className="dash about">
+      <div className="about">
         <h1 className="about-hero">SemáforoAlerta 🚦</h1>
         <p className="about-lead">
           Mapa público y transparente de semáforos malogrados en Lima, Perú. La
@@ -120,6 +120,5 @@ export default function AboutView() {
           Proyecto de código abierto · hecho para Lima, replicable en cualquier ciudad.
         </p>
       </div>
-    </div>
   )
 }

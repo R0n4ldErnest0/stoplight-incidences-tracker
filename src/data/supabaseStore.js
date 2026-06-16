@@ -12,6 +12,13 @@ function mapRow(row) {
     .slice()
     .sort((a, b) => new Date(a.at) - new Date(b.at))
     .map((h) => ({ status: h.status, at: h.at, note: h.note || '' }))
+  // Varias fotos por reporte (columna `photos`); `photo_url` se mantiene como la
+  // principal por compatibilidad con filas antiguas.
+  const photos = Array.isArray(row.photos) && row.photos.length
+    ? row.photos
+    : row.photo_url
+      ? [row.photo_url]
+      : []
   return {
     id: row.id,
     title: row.title,
@@ -21,7 +28,8 @@ function mapRow(row) {
     lat: row.lat,
     lng: row.lng,
     status: row.status,
-    photo: row.photo_url || null,
+    photos,
+    photo: photos[0] || null, // alias de la principal (miniaturas de lista/mapa)
     createdAt: row.created_at,
     history: history.length
       ? history
@@ -53,6 +61,16 @@ async function uploadPhoto(dataUrl) {
   if (error) throw error
   const { data } = supabase.storage.from(PHOTO_BUCKET).getPublicUrl(path)
   return data.publicUrl
+}
+
+// Sube varias fotos (dataURLs) y devuelve sus URLs públicas, en orden.
+async function uploadPhotos(dataUrls = []) {
+  const urls = []
+  for (const d of dataUrls) {
+    const url = await uploadPhoto(d)
+    if (url) urls.push(url)
+  }
+  return urls
 }
 
 export async function listIncidents() {
@@ -88,7 +106,13 @@ export async function findNearby({ lat, lng }, radius = 60) {
 }
 
 export async function createIncident(input) {
-  const photoUrl = await uploadPhoto(input.photo)
+  // Acepta varias fotos (`photos`) o una sola (`photo`, compatibilidad).
+  const inputPhotos = input.photos?.length
+    ? input.photos
+    : input.photo
+      ? [input.photo]
+      : []
+  const photoUrls = await uploadPhotos(inputPhotos)
 
   const { data: inc, error } = await supabase
     .from('incidents')
@@ -100,7 +124,8 @@ export async function createIncident(input) {
       lat: input.lat,
       lng: input.lng,
       status: 'reported',
-      photo_url: photoUrl,
+      photos: photoUrls,
+      photo_url: photoUrls[0] || null, // principal, por compatibilidad
     })
     .select()
     .single()

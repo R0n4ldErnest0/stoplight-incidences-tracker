@@ -15,6 +15,12 @@ function faultLabel(key) {
 export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }) {
   const age = ageDays(incident)
   const gmaps = `https://www.google.com/maps/search/?api=1&query=${incident.lat},${incident.lng}`
+  // Soporta reportes con varias fotos; cae a `photo` para filas antiguas.
+  const photos = incident.photos?.length
+    ? incident.photos
+    : incident.photo
+      ? [incident.photo]
+      : []
 
   async function setStatus(status) {
     const note = isAdmin ? 'Actualizado por la autoridad' : ''
@@ -35,8 +41,14 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           <button className="icon-btn" onClick={onClose} aria-label="Cerrar">×</button>
         </div>
         <div className="drawer-body">
-          {incident.photo ? (
-            <img className="detail-photo" src={incident.photo} alt="Semáforo reportado" />
+          {photos.length > 0 ? (
+            <div className={photos.length > 1 ? 'detail-gallery' : ''}>
+              {photos.map((src, i) => (
+                <a key={i} href={src} target="_blank" rel="noreferrer">
+                  <img className="detail-photo" src={src} alt={`Semáforo reportado ${i + 1}`} />
+                </a>
+              ))}
+            </div>
           ) : (
             <div className="detail-photo" style={{ display: 'grid', placeItems: 'center', height: 160, color: 'var(--muted)' }}>
               Sin foto

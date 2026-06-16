@@ -4,6 +4,8 @@ import L from 'leaflet'
 import { LIMA_CENTER, FAULT_TYPES, DISTRICTS } from '../constants.js'
 import { createIncident, findNearby } from '../data/store.js'
 
+const MAX_PHOTOS = 4
+
 const pickIcon = L.divIcon({
   className: '',
   html: '<div class="pin" style="background:#38bdf8"></div>',
@@ -28,18 +30,30 @@ function Recenter({ pos }) {
   return null
 }
 
+// Lee un File como dataURL (base64) para previsualizar y almacenar.
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+}
+
 export default function ReportForm({ onClose, onCreated }) {
   const [pos, setPos] = useState(null)
-  const [photo, setPhoto] = useState(null)
+  const [photos, setPhotos] = useState([]) // dataURLs (varias fotos)
   const [title, setTitle] = useState('')
   const [faultType, setFaultType] = useState(FAULT_TYPES[0].key)
   const [district, setDistrict] = useState(DISTRICTS[0])
   const [description, setDescription] = useState('')
   const [locating, setLocating] = useState(false)
+  const [locHint, setLocHint] = useState('') // guía cuando falla el GPS
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [nearby, setNearby] = useState([])
-  const fileRef = useRef(null)
+  const cameraRef = useRef(null)
+  const galleryRef = useRef(null)
 
   // Busca reportes cercanos cada vez que cambia la ubicación elegida.
   useEffect(() => {
@@ -56,10 +70,38 @@ export default function ReportForm({ onClose, onCreated }) {
     }
   }, [pos])
 
+  async function addFiles(fileList) {
+    const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'))
+    if (!files.length) return
+    const free = MAX_PHOTOS - photos.length
+    if (free <= 0) {
+      setError(`Máximo ${MAX_PHOTOS} fotos por reporte.`)
+      return
+    }
+    setError('')
+    const dataUrls = await Promise.all(files.slice(0, free).map(readFileAsDataUrl))
+    setPhotos((prev) => [...prev, ...dataUrls].slice(0, MAX_PHOTOS))
+  }
+
+  function onCameraChange(e) {
+    addFiles(e.target.files)
+    e.target.value = '' // permite volver a tomar la misma foto
+  }
+
+  function onGalleryChange(e) {
+    addFiles(e.target.files)
+    e.target.value = ''
+  }
+
+  function removePhoto(idx) {
+    setPhotos((prev) => prev.filter((_, i) => i !== idx))
+  }
+
   function useMyLocation() {
     setError('')
+    setLocHint('')
     if (!navigator.geolocation) {
-      setError('Tu navegador no permite geolocalización. Marca el punto en el mapa.')
+      setLocHint('Tu navegador no permite geolocalización. Marca el punto en el mapa.')
       return
     }
     setLocating(true)
@@ -67,32 +109,42 @@ export default function ReportForm({ onClose, onCreated }) {
       (p) => {
         setPos({ lat: p.coords.latitude, lng: p.coords.longitude })
         setLocating(false)
+        setLocHint('')
       },
-      () => {
+      (err) => {
         setLocating(false)
-        setError('No pudimos obtener tu ubicación. Marca el punto en el mapa.')
+        // Mensaje según la causa, para que la persona sepa qué hacer.
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocHint(
+            'Permiso de ubicación bloqueado. Actívalo en el ícono 🔒/ⓘ junto a la dirección ' +
+              'del navegador (o en Ajustes → la app) y vuelve a intentar. Mientras tanto, ' +
+              'puedes tocar el mapa para marcar el punto.'
+          )
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocHint(
+            'No se pudo obtener tu ubicación. Activa el GPS/ubicación de tu dispositivo y ' +
+              'asegúrate de tener señal, o toca el mapa para marcar el punto.'
+          )
+        } else {
+          setLocHint(
+            'La ubicación tardó demasiado. Vuelve a intentar con el GPS activado, o toca el ' +
+              'mapa para marcar el punto.'
+          )
+        }
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     )
-  }
-
-  function onPhotoChange(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const reader = new FileReader()
-    reader.onload = () => setPhoto(reader.result) // dataURL
-    reader.readAsDataURL(file)
   }
 
   async function submit(e) {
     e.preventDefault()
     setError('')
-    if (!pos) {
-      setError('Indica la ubicación del semáforo (usa tu ubicación o toca el mapa).')
+    if (photos.length === 0) {
+      setError('Agrega al menos una foto del semáforo para que el reporte sea accionable.')
       return
     }
-    if (!photo) {
-      setError('Una foto es obligatoria para que el reporte sea accionable.')
+    if (!pos) {
+      setError('Indica la ubicación del semáforo (usa tu ubicación o toca el mapa).')
       return
     }
     setSubmitting(true)
@@ -104,7 +156,7 @@ export default function ReportForm({ onClose, onCreated }) {
         district,
         lat: pos.lat,
         lng: pos.lng,
-        photo,
+        photos,
       })
       onCreated(created)
     } catch (err) {
@@ -113,6 +165,8 @@ export default function ReportForm({ onClose, onCreated }) {
       setSubmitting(false)
     }
   }
+
+  const photosFull = photos.length >= MAX_PHOTOS
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -124,6 +178,70 @@ export default function ReportForm({ onClose, onCreated }) {
         <form className="drawer-body" onSubmit={submit}>
           {error && <div className="warn">{error}</div>}
 
+          {/* 1) Foto: lo primero y lo más importante del reporte. */}
+          <div className="field">
+            <label>📷 Fotos del semáforo *</label>
+            <div className="help" style={{ marginTop: 0, marginBottom: 8 }}>
+              Toma una foto o sube imágenes desde tu dispositivo. Hasta {MAX_PHOTOS}.
+            </div>
+
+            {/* Inputs ocultos: uno abre la cámara, otro la galería. */}
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={onCameraChange}
+            />
+            <input
+              ref={galleryRef}
+              type="file"
+              accept="image/*"
+              multiple
+              hidden
+              onChange={onGalleryChange}
+            />
+
+            <div className="photo-actions">
+              <button
+                type="button"
+                className="btn btn-photo"
+                onClick={() => cameraRef.current?.click()}
+                disabled={photosFull}
+              >
+                📷 Tomar foto
+              </button>
+              <button
+                type="button"
+                className="btn btn-photo"
+                onClick={() => galleryRef.current?.click()}
+                disabled={photosFull}
+              >
+                🖼️ Subir de galería
+              </button>
+            </div>
+
+            {photos.length > 0 && (
+              <div className="photo-grid">
+                {photos.map((src, i) => (
+                  <div className="photo-thumb" key={i}>
+                    <img src={src} alt={`Foto ${i + 1}`} />
+                    <button
+                      type="button"
+                      className="photo-remove"
+                      aria-label="Quitar foto"
+                      onClick={() => removePhoto(i)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 2) Ubicación. */}
           <div className="field">
             <label>Ubicación del semáforo *</label>
             <div className="locate-row">
@@ -134,6 +252,7 @@ export default function ReportForm({ onClose, onCreated }) {
                 {pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'sin ubicación'}
               </span>
             </div>
+            {locHint && <div className="warn" style={{ margin: '8px 0 0' }}>{locHint}</div>}
             <div className="help">O toca el mapa para marcar el punto exacto.</div>
             <div className="mini-map" style={{ marginTop: 8 }}>
               <MapContainer center={LIMA_CENTER} zoom={12} scrollWheelZoom style={{ height: '100%' }}>
@@ -150,19 +269,6 @@ export default function ReportForm({ onClose, onCreated }) {
               semáforo? Revisa el mapa antes de duplicar.
             </div>
           )}
-
-          <div className="field">
-            <label>Foto del semáforo *</label>
-            <input
-              ref={fileRef}
-              className="input"
-              type="file"
-              accept="image/*"
-              capture="environment"
-              onChange={onPhotoChange}
-            />
-            {photo && <img className="photo-preview" src={photo} alt="Vista previa" />}
-          </div>
 
           <div className="field">
             <label>Cruce / referencia</label>

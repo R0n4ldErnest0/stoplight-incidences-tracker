@@ -48,6 +48,12 @@ export async function findNearby({ lat, lng }, radius = 60) {
 export async function createIncident(input) {
   const incidents = load()
   const now = new Date().toISOString()
+  // Acepta varias fotos (`photos`) o una sola (`photo`, compatibilidad).
+  const photos = input.photos?.length
+    ? input.photos
+    : input.photo
+      ? [input.photo]
+      : []
   const incident = {
     id: genId(),
     title: input.title?.trim() || 'Semáforo sin nombre de cruce',
@@ -57,7 +63,8 @@ export async function createIncident(input) {
     lat: input.lat,
     lng: input.lng,
     status: 'reported',
-    photo: input.photo || null,
+    photos,
+    photo: photos[0] || null, // alias de la principal (miniaturas de lista/mapa)
     createdAt: now,
     history: [{ status: 'reported', at: now, note: 'Reporte ciudadano' }],
   }

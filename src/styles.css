@@ -61,6 +61,14 @@ button {
 }
 .topbar .spacer { flex: 1; }
 
+/* Entrada discreta a "Acerca de" (abre un modal, no es parte de la navegación). */
+.about-trigger {
+  font-size: 18px;
+  color: var(--muted);
+  border-radius: 50%;
+}
+.about-trigger:hover { color: var(--accent); }
+
 .source-pill {
   font-size: 12px;
   font-weight: 600;
@@ -241,13 +249,69 @@ button {
 .textarea { resize: vertical; min-height: 80px; }
 .help { font-size: 12px; color: var(--muted); margin-top: 6px; }
 
-.photo-preview {
-  width: 100%;
-  border-radius: 12px;
+/* ---------- Photo capture ---------- */
+.photo-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.btn-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 12px;
+  font-size: 14px;
+  border-style: dashed;
+  border-color: var(--accent);
+  background: rgba(56, 189, 248, 0.08);
+  color: var(--text);
+}
+.btn-photo:hover:not(:disabled) { background: rgba(56, 189, 248, 0.16); }
+.btn-photo:disabled { opacity: 0.45; cursor: not-allowed; }
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+.photo-thumb {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  overflow: hidden;
   border: 1px solid var(--border);
-  margin-top: 8px;
-  max-height: 220px;
-  object-fit: cover;
+  background: var(--panel);
+}
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.photo-remove {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(2, 6, 23, 0.78);
+  color: #fff;
+  font-size: 15px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.photo-remove:hover { background: var(--danger); }
+
+.thumb-count {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(2, 6, 23, 0.72);
+  border-radius: 999px;
+  padding: 1px 7px;
 }
 
 .locate-row { display: flex; gap: 8px; align-items: center; }
@@ -273,6 +337,19 @@ button {
   object-fit: cover;
   margin-bottom: 14px;
   background: var(--panel);
+}
+/* Varias fotos: cuadrícula compacta y tocable (abre la imagen completa). */
+.detail-gallery {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.detail-gallery .detail-photo {
+  margin-bottom: 0;
+  height: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: none;
 }
 .detail-meta { font-size: 14px; color: var(--muted); margin: 6px 0; }
 .detail-meta b { color: var(--text); }
@@ -383,6 +460,7 @@ button {
 }
 .card:hover { border-color: var(--accent); transform: translateY(-1px); }
 .card-thumb {
+  position: relative;
   flex: 0 0 84px;
   width: 84px;
   height: 84px;
@@ -429,7 +507,6 @@ button {
 
 @media (max-width: 480px) {
   .card-thumb { flex-basis: 64px; width: 64px; height: 64px; }
-  .viewtab { padding: 6px 9px; }
 }
 
 /* ---------- Transparency dashboard ---------- */
@@ -625,15 +702,34 @@ button {
   }
   .topbar .spacer { display: none; }
   .brand { flex: 1 1 auto; min-width: 0; font-size: 16px; }
+  /* Tabs en su propia fila, repartidas a lo ancho y con buen tamaño táctil. */
   .viewtabs {
     order: 10;          /* push to the wrapped second row */
     flex-basis: 100%;   /* force its own line */
     margin-right: 0;
-    overflow-x: auto;   /* fallback if even the tabs don't fit */
+    width: 100%;
   }
-  .viewtab { flex: 1 0 auto; text-align: center; white-space: nowrap; }
+  .viewtab {
+    flex: 1 1 0;        /* tres pestañas de igual ancho, sin scroll lateral */
+    text-align: center;
+    white-space: nowrap;
+    padding: 10px 8px;
+    font-size: 14px;
+  }
+
+  /* Resumen: que las fichas envuelvan en varias filas en vez de obligar a
+     desplazarse a la derecha para ver las que quedan ocultas. */
+  .stats {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+  .stat { flex: 0 0 auto; }
+  .stat-spacer { display: none; }
+  .date-filter { flex-basis: 100%; justify-content: flex-start; }
 }
 
 @media (max-width: 480px) {
   .brand small { display: none; }
+  /* Dos columnas para las fotos en pantallas estrechas. */
+  .photo-grid { grid-template-columns: repeat(2, 1fr); }
 }
