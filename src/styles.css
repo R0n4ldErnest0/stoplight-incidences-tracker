@@ -290,22 +290,9 @@ button {
 .btn-photo:hover:not(:disabled) { background: rgba(2, 132, 199, 0.14); }
 .btn-photo:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* Menú "Añadir foto": un botón que ofrece cámara o galería (funciona en móvil). */
-.photo-menu { display: grid; gap: 8px; margin-top: 8px; }
-.photo-menu-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 14px;
-  font-size: 16px;
-  font-weight: 600;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--panel);
-  color: var(--text);
-}
-.photo-menu-item:hover { background: var(--panel-2); border-color: var(--accent); }
+/* Dos botones de foto directos (cámara / galería), sin menú intermedio. */
+.photo-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.photo-buttons .btn-photo { padding: 15px 10px; font-size: 15px; }
 
 /* Alineación de los íconos (react-icons) junto al texto. */
 button svg,

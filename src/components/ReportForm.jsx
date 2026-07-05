@@ -59,7 +59,6 @@ export default function ReportForm({ onClose, onCreated }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [nearby, setNearby] = useState([])
-  const [photoMenu, setPhotoMenu] = useState(false)
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
 
@@ -253,39 +252,24 @@ export default function ReportForm({ onClose, onCreated }) {
               hidden
               onChange={onPhotoChange}
             />
-            <button
-              type="button"
-              className="btn btn-photo"
-              onClick={() => setPhotoMenu((v) => !v)}
-              disabled={photosFull}
-              aria-expanded={photoMenu}
-            >
-              <FiCamera /> {photos.length ? 'Añadir otra foto' : 'Añadir foto'}
-            </button>
-            {photoMenu && (
-              <div className="photo-menu">
-                <button
-                  type="button"
-                  className="photo-menu-item"
-                  onClick={() => {
-                    setPhotoMenu(false)
-                    cameraRef.current?.click()
-                  }}
-                >
-                  <FiCamera /> Tomar foto
-                </button>
-                <button
-                  type="button"
-                  className="photo-menu-item"
-                  onClick={() => {
-                    setPhotoMenu(false)
-                    galleryRef.current?.click()
-                  }}
-                >
-                  <FiImage /> Elegir de galería
-                </button>
-              </div>
-            )}
+            <div className="photo-buttons">
+              <button
+                type="button"
+                className="btn btn-photo"
+                onClick={() => cameraRef.current?.click()}
+                disabled={photosFull}
+              >
+                <FiCamera /> Tomar foto
+              </button>
+              <button
+                type="button"
+                className="btn btn-photo"
+                onClick={() => galleryRef.current?.click()}
+                disabled={photosFull}
+              >
+                <FiImage /> Elegir de galería
+              </button>
+            </div>
 
             {photos.length > 0 && (
               <div className="photo-grid">

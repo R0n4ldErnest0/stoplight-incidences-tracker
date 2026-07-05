@@ -39,8 +39,9 @@ test('report form leads with photo, then Peru location dropdowns', async ({ page
   await page.goto('/')
   await page.getByRole('button', { name: /Reportar sem/ }).click()
   await expect(page.getByRole('heading', { name: 'Reportar semáforo' })).toBeVisible()
-  // Foto primero: un solo botón que sirve para cámara o galería.
-  await expect(page.getByRole('button', { name: /Añadir foto/ })).toBeVisible()
+  // Foto primero: dos botones directos, cámara y galería.
+  await expect(page.getByRole('button', { name: /Tomar foto/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: /Elegir de galería/ })).toBeVisible()
   // Ubicación a nivel país: desplegable de Departamento con datos del Perú.
   const depto = page.getByLabel('Departamento')
   await expect(depto).toBeVisible()
