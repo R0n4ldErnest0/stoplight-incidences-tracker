@@ -15,7 +15,9 @@ create table if not exists public.incidents (
   title       text not null,
   description text default '',
   fault_type  text default 'otro',
-  district    text default 'Otro',
+  departamento text default '',           -- división política del Perú (UBIGEO)
+  provincia   text default '',
+  district    text default 'Otro',        -- distrito (nombre histórico de la columna)
   lat         double precision not null,
   lng         double precision not null,
   -- Columna geográfica derivada (para PostGIS / ST_DWithin más adelante).
@@ -37,6 +39,10 @@ alter table public.incidents
   add column if not exists flags int not null default 0;
 alter table public.incidents
   add column if not exists hidden boolean not null default false;
+alter table public.incidents
+  add column if not exists departamento text default '';
+alter table public.incidents
+  add column if not exists provincia text default '';
 
 create index if not exists incidents_status_idx on public.incidents (status);
 create index if not exists incidents_geom_idx on public.incidents using gist (geom);

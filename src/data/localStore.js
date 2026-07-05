@@ -62,7 +62,9 @@ export async function createIncident(input) {
     title: input.title?.trim() || 'Semáforo sin nombre de cruce',
     description: input.description?.trim() || '',
     faultType: input.faultType || 'otro',
-    district: input.district || 'Otro',
+    departamento: input.departamento || '',
+    provincia: input.provincia || '',
+    district: input.district || input.distrito || 'Otro', // distrito
     lat: input.lat,
     lng: input.lng,
     status: 'reported',

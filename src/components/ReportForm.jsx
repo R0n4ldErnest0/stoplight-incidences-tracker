@@ -1,14 +1,16 @@
 import { useState, useRef, useEffect } from 'react'
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import L from 'leaflet'
-import { LIMA_CENTER, FAULT_TYPES, DISTRICTS } from '../constants.js'
+import { LIMA_CENTER, FAULT_TYPES } from '../constants.js'
 import { createIncident, findNearby } from '../data/store.js'
+import { departamentos, provincias, distritos, titleCase } from '../data/peru.js'
+import { reverseGeocodeUbigeo } from '../data/geo.js'
 
 const MAX_PHOTOS = 4
 
 const pickIcon = L.divIcon({
   className: '',
-  html: '<div class="pin" style="background:#38bdf8"></div>',
+  html: '<div class="pin" style="background:#0284c7"></div>',
   iconSize: [18, 18],
   iconAnchor: [9, 18],
 })
@@ -45,15 +47,17 @@ export default function ReportForm({ onClose, onCreated }) {
   const [photos, setPhotos] = useState([]) // dataURLs (varias fotos)
   const [title, setTitle] = useState('')
   const [faultType, setFaultType] = useState(FAULT_TYPES[0].key)
-  const [district, setDistrict] = useState(DISTRICTS[0])
+  const [departamento, setDepartamento] = useState('')
+  const [provincia, setProvincia] = useState('')
+  const [distrito, setDistrito] = useState('')
   const [description, setDescription] = useState('')
   const [locating, setLocating] = useState(false)
   const [locHint, setLocHint] = useState('') // guía cuando falla el GPS
+  const [geoLoading, setGeoLoading] = useState(false) // detectando distrito
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [nearby, setNearby] = useState([])
-  const cameraRef = useRef(null)
-  const galleryRef = useRef(null)
+  const photoRef = useRef(null)
 
   // Busca reportes cercanos cada vez que cambia la ubicación elegida.
   useEffect(() => {
@@ -70,6 +74,29 @@ export default function ReportForm({ onClose, onCreated }) {
     }
   }, [pos])
 
+  // Autocompleta departamento/provincia/distrito desde la ubicación (con debounce
+  // para no saturar la geocodificación si se toca el mapa varias veces).
+  useEffect(() => {
+    if (!pos) return
+    let active = true
+    setGeoLoading(true)
+    const t = setTimeout(() => {
+      reverseGeocodeUbigeo(pos.lat, pos.lng)
+        .then((m) => {
+          if (!active) return
+          if (m.departamento) setDepartamento(m.departamento)
+          if (m.provincia) setProvincia(m.provincia)
+          if (m.distrito) setDistrito(m.distrito)
+        })
+        .catch(() => {})
+        .finally(() => active && setGeoLoading(false))
+    }, 700)
+    return () => {
+      active = false
+      clearTimeout(t)
+    }
+  }, [pos])
+
   async function addFiles(fileList) {
     const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'))
     if (!files.length) return
@@ -83,18 +110,23 @@ export default function ReportForm({ onClose, onCreated }) {
     setPhotos((prev) => [...prev, ...dataUrls].slice(0, MAX_PHOTOS))
   }
 
-  function onCameraChange(e) {
+  function onPhotoChange(e) {
     addFiles(e.target.files)
-    e.target.value = '' // permite volver a tomar la misma foto
-  }
-
-  function onGalleryChange(e) {
-    addFiles(e.target.files)
-    e.target.value = ''
+    e.target.value = '' // permite volver a elegir la misma foto
   }
 
   function removePhoto(idx) {
     setPhotos((prev) => prev.filter((_, i) => i !== idx))
+  }
+
+  function onDepartamentoChange(value) {
+    setDepartamento(value)
+    setProvincia('')
+    setDistrito('')
+  }
+  function onProvinciaChange(value) {
+    setProvincia(value)
+    setDistrito('')
   }
 
   function useMyLocation() {
@@ -153,7 +185,10 @@ export default function ReportForm({ onClose, onCreated }) {
         title,
         description,
         faultType,
-        district,
+        departamento,
+        provincia,
+        distrito,
+        district: distrito, // compatibilidad con el panel/lista existentes
         lat: pos.lat,
         lng: pos.lng,
         photos,
@@ -178,49 +213,28 @@ export default function ReportForm({ onClose, onCreated }) {
         <form className="drawer-body" onSubmit={submit}>
           {error && <div className="warn">{error}</div>}
 
-          {/* 1) Foto: lo primero y lo más importante del reporte. */}
+          {/* ① Foto: lo primero y lo más importante del reporte. */}
+          <div className="form-section-title">1 · Foto del semáforo</div>
           <div className="field">
-            <label>📷 Fotos del semáforo *</label>
             <div className="help" style={{ marginTop: 0, marginBottom: 8 }}>
-              Toma una foto o sube imágenes desde tu dispositivo. Hasta {MAX_PHOTOS}.
+              Toma una foto o elige imágenes de tu dispositivo. Hasta {MAX_PHOTOS}.
             </div>
-
-            {/* Inputs ocultos: uno abre la cámara, otro la galería. */}
             <input
-              ref={cameraRef}
-              type="file"
-              accept="image/*"
-              capture="environment"
-              hidden
-              onChange={onCameraChange}
-            />
-            <input
-              ref={galleryRef}
+              ref={photoRef}
               type="file"
               accept="image/*"
               multiple
               hidden
-              onChange={onGalleryChange}
+              onChange={onPhotoChange}
             />
-
-            <div className="photo-actions">
-              <button
-                type="button"
-                className="btn btn-photo"
-                onClick={() => cameraRef.current?.click()}
-                disabled={photosFull}
-              >
-                📷 Tomar foto
-              </button>
-              <button
-                type="button"
-                className="btn btn-photo"
-                onClick={() => galleryRef.current?.click()}
-                disabled={photosFull}
-              >
-                🖼️ Subir de galería
-              </button>
-            </div>
+            <button
+              type="button"
+              className="btn btn-photo"
+              onClick={() => photoRef.current?.click()}
+              disabled={photosFull}
+            >
+              📷 {photos.length ? 'Añadir otra foto' : 'Añadir foto'}
+            </button>
 
             {photos.length > 0 && (
               <div className="photo-grid">
@@ -241,19 +255,21 @@ export default function ReportForm({ onClose, onCreated }) {
             )}
           </div>
 
-          {/* 2) Ubicación. */}
+          {/* ② Ubicación (todo lo geográfico junto). */}
+          <div className="form-section-title">2 · Ubicación</div>
           <div className="field">
-            <label>Ubicación del semáforo *</label>
-            <div className="locate-row">
-              <button type="button" className="btn btn-sm" onClick={useMyLocation} disabled={locating}>
-                {locating ? 'Ubicando…' : '📍 Usar mi ubicación'}
-              </button>
-              <span className="coords">
-                {pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'sin ubicación'}
-              </span>
+            <button
+              type="button"
+              className="btn btn-primary btn-locate"
+              onClick={useMyLocation}
+              disabled={locating}
+            >
+              {locating ? 'Ubicando…' : '📍 Usar mi ubicación'}
+            </button>
+            <div className="coords" style={{ marginTop: 6 }}>
+              {pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'Sin ubicación · o toca el mapa'}
             </div>
             {locHint && <div className="warn" style={{ margin: '8px 0 0' }}>{locHint}</div>}
-            <div className="help">O toca el mapa para marcar el punto exacto.</div>
             <div className="mini-map" style={{ marginTop: 8 }}>
               <MapContainer center={LIMA_CENTER} zoom={12} scrollWheelZoom style={{ height: '100%' }}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
@@ -261,6 +277,7 @@ export default function ReportForm({ onClose, onCreated }) {
                 <Recenter pos={pos} />
               </MapContainer>
             </div>
+            <div className="help">Ubicación por OpenStreetMap. Toca el mapa para ajustar el punto.</div>
           </div>
 
           {nearby.length > 0 && (
@@ -269,6 +286,53 @@ export default function ReportForm({ onClose, onCreated }) {
               semáforo? Revisa el mapa antes de duplicar.
             </div>
           )}
+
+          <div className="field">
+            <label>Departamento {geoLoading && <span className="help-inline">detectando…</span>}</label>
+            <select
+              className="select"
+              aria-label="Departamento"
+              value={departamento}
+              onChange={(e) => onDepartamentoChange(e.target.value)}
+            >
+              <option value="">Selecciona…</option>
+              {departamentos().map((d) => (
+                <option key={d} value={d}>{titleCase(d)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field">
+            <label>Provincia</label>
+            <select
+              className="select"
+              aria-label="Provincia"
+              value={provincia}
+              onChange={(e) => onProvinciaChange(e.target.value)}
+              disabled={!departamento}
+            >
+              <option value="">{departamento ? 'Selecciona…' : 'Elige un departamento primero'}</option>
+              {provincias(departamento).map((p) => (
+                <option key={p} value={p}>{titleCase(p)}</option>
+              ))}
+            </select>
+          </div>
+
+          <div className="field">
+            <label>Distrito</label>
+            <select
+              className="select"
+              aria-label="Distrito"
+              value={distrito}
+              onChange={(e) => setDistrito(e.target.value)}
+              disabled={!provincia}
+            >
+              <option value="">{provincia ? 'Selecciona…' : 'Elige una provincia primero'}</option>
+              {distritos(departamento, provincia).map((d) => (
+                <option key={d} value={d}>{titleCase(d)}</option>
+              ))}
+            </select>
+          </div>
 
           <div className="field">
             <label>Cruce / referencia</label>
@@ -281,20 +345,13 @@ export default function ReportForm({ onClose, onCreated }) {
             />
           </div>
 
+          {/* ③ La falla (qué pasa con el semáforo). */}
+          <div className="form-section-title">3 · La falla</div>
           <div className="field">
             <label>Tipo de falla</label>
             <select className="select" value={faultType} onChange={(e) => setFaultType(e.target.value)}>
               {FAULT_TYPES.map((f) => (
                 <option key={f.key} value={f.key}>{f.label}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="field">
-            <label>Distrito</label>
-            <select className="select" value={district} onChange={(e) => setDistrict(e.target.value)}>
-              {DISTRICTS.map((d) => (
-                <option key={d} value={d}>{d}</option>
               ))}
             </select>
           </div>
@@ -309,7 +366,7 @@ export default function ReportForm({ onClose, onCreated }) {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+          <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={submitting}>
             {submitting ? 'Publicando…' : 'Publicar reporte'}
           </button>
           <div className="help" style={{ marginTop: 8 }}>

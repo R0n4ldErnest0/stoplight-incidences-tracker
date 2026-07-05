@@ -41,7 +41,7 @@ export const STATUS_ORDER = ['reported', 'acknowledged', 'in_progress', 'resolve
 
 // Tipos de falla más comunes en semáforos.
 export const FAULT_TYPES = [
-  { key: 'apagado', label: 'Apagado / sin luz' },
+  { key: 'apagado', label: 'Apagado o Sin luz' },
   { key: 'intermitente', label: 'Solo intermitente' },
   { key: 'pegado', label: 'Pegado en un color' },
   { key: 'dañado', label: 'Estructura dañada / chocado' },

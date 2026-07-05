@@ -35,13 +35,21 @@ test('date-range filter is available', async ({ page }) => {
   await expect(dateSelect).toHaveValue('7d')
 })
 
-test('report form leads with photo capture options', async ({ page }) => {
+test('report form leads with photo, then Peru location dropdowns', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: /Reportar sem/ }).click()
   await expect(page.getByRole('heading', { name: 'Reportar semáforo' })).toBeVisible()
-  // Foto primero: cámara y galería como acciones explícitas.
-  await expect(page.getByRole('button', { name: /Tomar foto/ })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Subir de galería/ })).toBeVisible()
+  // Foto primero: un solo botón que sirve para cámara o galería.
+  await expect(page.getByRole('button', { name: /Añadir foto/ })).toBeVisible()
+  // Ubicación a nivel país: desplegable de Departamento con datos del Perú.
+  const depto = page.getByLabel('Departamento')
+  await expect(depto).toBeVisible()
+  await depto.selectOption('LIMA')
+  const prov = page.getByLabel('Provincia')
+  await prov.selectOption('LIMA')
+  const dist = page.getByLabel('Distrito')
+  await dist.selectOption('MIRAFLORES')
+  await expect(dist).toHaveValue('MIRAFLORES')
 })
 
 test('can flag an incident as abuse from its detail', async ({ page }) => {

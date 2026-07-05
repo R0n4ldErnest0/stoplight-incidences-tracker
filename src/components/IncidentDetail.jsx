@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
+import { titleCase } from '../data/peru.js'
 import StatusBadge from './StatusBadge.jsx'
 
 function fmtDate(iso) {
@@ -16,6 +17,11 @@ function faultLabel(key) {
 export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }) {
   const age = ageDays(incident)
   const gmaps = `https://www.google.com/maps/search/?api=1&query=${incident.lat},${incident.lng}`
+  // Línea de ubicación: Distrito, Provincia, Departamento (lo que exista).
+  const lugar = [incident.district, incident.provincia, incident.departamento]
+    .filter((x) => x && x !== 'Otro')
+    .map(titleCase)
+    .join(', ')
   // Soporta reportes con varias fotos; cae a `photo` para filas antiguas.
   const photos = incident.photos?.length
     ? incident.photos
@@ -94,7 +100,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           )}
 
           <p className="detail-meta"><b>Falla:</b> {faultLabel(incident.faultType)}</p>
-          <p className="detail-meta"><b>Distrito:</b> {incident.district}</p>
+          {lugar && <p className="detail-meta"><b>Ubicación:</b> {lugar}</p>}
           <p className="detail-meta"><b>Reportado:</b> {fmtDate(incident.createdAt)} ({age} días)</p>
           {incident.description && <p style={{ marginTop: 12 }}>{incident.description}</p>}
 
