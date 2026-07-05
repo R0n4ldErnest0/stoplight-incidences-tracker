@@ -1,7 +1,8 @@
 // Sección "Acerca de": qué es el proyecto, por qué existe, cómo funciona,
 // quién lo hizo y hacia dónde va.
-//
-// 👉 Datos del creador. Deja en '' cualquier enlace que no quieras mostrar.
+import { FiCamera, FiMap, FiActivity, FiBarChart2, FiMail, FiGithub, FiLinkedin, FiGlobe } from 'react-icons/fi'
+
+// Datos del creador. Deja en '' cualquier enlace que no quieras mostrar.
 const CREATOR = {
   name: 'Ronald Ernesto',
   role: 'Creador y desarrollador',
@@ -17,22 +18,22 @@ const CREATOR = {
 
 const STEPS = [
   {
-    icon: '📸',
+    Icon: FiCamera,
     title: 'La ciudadanía reporta',
     text: 'Foto + ubicación (GPS o tocando el mapa) + descripción de la falla. Toma segundos.',
   },
   {
-    icon: '🗺️',
+    Icon: FiMap,
     title: 'Queda público',
     text: 'El reporte aparece en un mapa abierto para todos, con su historial visible.',
   },
   {
-    icon: '🚦',
+    Icon: FiActivity,
     title: 'La autoridad actualiza',
     text: 'Revisado → En reparación → Resuelto. Cada cambio queda registrado y a la vista.',
   },
   {
-    icon: '📊',
+    Icon: FiBarChart2,
     title: 'Rendición de cuentas',
     text: 'Un panel de transparencia muestra tiempos de respuesta y reparación por distrito.',
   },
@@ -49,17 +50,17 @@ const ROADMAP = [
 
 function CreatorLinks({ creator }) {
   const links = [
-    creator.email && { href: `mailto:${creator.email}`, label: '✉️ Correo' },
-    creator.github && { href: creator.github, label: '💻 GitHub' },
-    creator.linkedin && { href: creator.linkedin, label: '🔗 LinkedIn' },
-    creator.site && { href: creator.site, label: '🌐 Sitio' },
+    creator.email && { href: `mailto:${creator.email}`, label: 'Correo', Icon: FiMail },
+    creator.github && { href: creator.github, label: 'GitHub', Icon: FiGithub },
+    creator.linkedin && { href: creator.linkedin, label: 'LinkedIn', Icon: FiLinkedin },
+    creator.site && { href: creator.site, label: 'Sitio', Icon: FiGlobe },
   ].filter(Boolean)
   if (!links.length) return null
   return (
     <div className="about-links">
       {links.map((l) => (
         <a key={l.href} className="chip" href={l.href} target="_blank" rel="noreferrer">
-          {l.label}
+          <l.Icon /> {l.label}
         </a>
       ))}
     </div>
@@ -89,7 +90,7 @@ export default function AboutView() {
         <div className="about-steps">
           {STEPS.map((s) => (
             <div key={s.title} className="about-step">
-              <div className="about-step-icon">{s.icon}</div>
+              <div className="about-step-icon"><s.Icon /></div>
               <div>
                 <div className="about-step-title">{s.title}</div>
                 <div className="about-step-text">{s.text}</div>

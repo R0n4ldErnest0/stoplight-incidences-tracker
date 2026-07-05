@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
+import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar } from 'react-icons/fi'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import DashboardView from './components/DashboardView.jsx'
-import AboutView from './components/AboutView.jsx'
 import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
 import AuthModal from './components/AuthModal.jsx'
+import AboutModal from './components/AboutModal.jsx'
 import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
@@ -93,19 +94,19 @@ export default function App() {
             className={view === 'map' ? 'viewtab active' : 'viewtab'}
             onClick={() => setView('map')}
           >
-            🗺️ Mapa
+            <FiMap /> Mapa
           </button>
           <button
             className={view === 'list' ? 'viewtab active' : 'viewtab'}
             onClick={() => setView('list')}
           >
-            📋 Lista
+            <FiList /> Lista
           </button>
           <button
             className={view === 'dashboard' ? 'viewtab active' : 'viewtab'}
             onClick={() => setView('dashboard')}
           >
-            📊 Transparencia
+            <FiBarChart2 /> Transparencia
           </button>
         </div>
         <button
@@ -114,7 +115,7 @@ export default function App() {
           title="Acerca de SemáforoAlerta"
           aria-label="Acerca de"
         >
-          ⓘ
+          <FiInfo />
         </button>
         {authState.user ? (
           <div className="auth-status">
@@ -129,7 +130,7 @@ export default function App() {
           </div>
         ) : (
           <button className="btn btn-sm btn-primary" onClick={() => setShowAuth(true)}>
-            🔒 Modo autoridad
+            <FiLock /> Modo autoridad
           </button>
         )}
       </header>
@@ -164,7 +165,7 @@ export default function App() {
           )}
           <div className="stat-spacer" />
           <label className="date-filter" title="Filtrar por antigüedad del reporte">
-            🗓️
+            <FiCalendar />
             <select
               className="date-select"
               value={dateRange}
@@ -189,7 +190,7 @@ export default function App() {
         )}
 
         <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
-          + Reportar semáforo
+          <FiPlus /> Reportar semáforo
         </button>
 
         {showReport && (
@@ -220,19 +221,7 @@ export default function App() {
           />
         )}
 
-        {showAbout && (
-          <div className="overlay" onClick={() => setShowAbout(false)}>
-            <div className="drawer" onClick={(e) => e.stopPropagation()}>
-              <div className="drawer-head">
-                <h2>Acerca de</h2>
-                <button className="icon-btn" onClick={() => setShowAbout(false)} aria-label="Cerrar">×</button>
-              </div>
-              <div className="drawer-body">
-                <AboutView />
-              </div>
-            </div>
-          </div>
-        )}
+        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
       </div>
     </div>
   )

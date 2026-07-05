@@ -1,3 +1,4 @@
+import { FiCamera, FiCalendar, FiRefreshCw, FiClock } from 'react-icons/fi'
 import { STATUSES, FAULT_TYPES } from '../constants.js'
 import { ageDays } from '../data/store.js'
 import StatusBadge from './StatusBadge.jsx'
@@ -41,7 +42,7 @@ export default function IncidentList({ incidents, onSelect }) {
                   <span className="card-thumb-empty">🚦</span>
                 )}
                 {inc.photos?.length > 1 && (
-                  <span className="thumb-count">📷 {inc.photos.length}</span>
+                  <span className="thumb-count"><FiCamera /> {inc.photos.length}</span>
                 )}
               </div>
               <div className="card-body">
@@ -55,10 +56,10 @@ export default function IncidentList({ incidents, onSelect }) {
                 </div>
                 {inc.description && <p className="card-desc">{inc.description}</p>}
                 <div className="card-dates">
-                  <span>📅 Reportado: <b>{fmtDate(inc.createdAt)}</b></span>
-                  <span>🔄 Actualizado: <b>{fmtDate(lastUpdate(inc))}</b></span>
+                  <span><FiCalendar /> Reportado: <b>{fmtDate(inc.createdAt)}</b></span>
+                  <span><FiRefreshCw /> Actualizado: <b>{fmtDate(lastUpdate(inc))}</b></span>
                   <span className={overdue ? 'age-flag' : ''}>
-                    ⏱ {age} día(s){overdue ? ' sin resolver' : ''}
+                    <FiClock /> {age} día(s){overdue ? ' sin resolver' : ''}
                   </span>
                 </div>
               </div>

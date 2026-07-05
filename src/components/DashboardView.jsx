@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { FiClock } from 'react-icons/fi'
 import { computeDashboard, ageDays } from '../data/helpers.js'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import StatusBadge from './StatusBadge.jsx'
@@ -75,7 +76,7 @@ export default function DashboardView({ incidents, onSelect }) {
         </div>
 
         {/* Semáforos más antiguos sin resolver — el ángulo de rendición de cuentas */}
-        <h4 className="dash-section">⏱ Más antiguos sin resolver</h4>
+        <h4 className="dash-section"><FiClock /> Más antiguos sin resolver</h4>
         <div className="oldest">
           {d.oldestUnresolved.length === 0 && (
             <p className="dash-sub">No hay incidencias activas. 🎉</p>

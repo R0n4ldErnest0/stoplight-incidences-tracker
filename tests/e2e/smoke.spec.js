@@ -52,6 +52,15 @@ test('report form leads with photo, then Peru location dropdowns', async ({ page
   await expect(dist).toHaveValue('MIRAFLORES')
 })
 
+test('phone back button closes an open modal', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Reportar sem/ }).click()
+  await expect(page.getByRole('heading', { name: 'Reportar semáforo' })).toBeVisible()
+  // El botón "atrás" del navegador/teléfono debe cerrar el modal, no salir.
+  await page.goBack()
+  await expect(page.getByRole('heading', { name: 'Reportar semáforo' })).toBeHidden()
+})
+
 test('can flag an incident as abuse from its detail', async ({ page }) => {
   await page.goto('/')
   // Aceptamos el diálogo de confirmación del navegador.

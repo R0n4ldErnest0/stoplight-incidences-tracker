@@ -290,95 +290,37 @@ button {
 .btn-photo:hover:not(:disabled) { background: rgba(2, 132, 199, 0.14); }
 .btn-photo:disabled { opacity: 0.45; cursor: not-allowed; }
 
-/* Cámara dentro de la app (vista en vivo + disparador + galería). */
-.cam-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 1200;
-  background: #000;
+/* Menú "Añadir foto": un botón que ofrece cámara o galería (funciona en móvil). */
+.photo-menu { display: grid; gap: 8px; margin-top: 8px; }
+.photo-menu-item {
   display: flex;
-  flex-direction: column;
-}
-.cam-video { flex: 1; width: 100%; min-height: 0; object-fit: cover; background: #000; }
-.cam-close {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  z-index: 2;
-  width: 44px;
-  height: 44px;
-  border: none;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  color: #fff;
-  font-size: 26px;
-  line-height: 1;
-}
-.cam-controls {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 12px;
-  padding: 18px 22px;
-  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
-  background: #000;
-}
-.cam-gallery {
-  justify-self: start;
-  width: 54px;
-  height: 54px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 24px;
-}
-.cam-shutter {
-  width: 74px;
-  height: 74px;
-  border-radius: 50%;
-  border: 5px solid #fff;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
-}
-.cam-shutter:active:not(:disabled) { transform: scale(0.94); }
-.cam-shutter:disabled { opacity: 0.4; }
-.cam-done {
-  justify-self: end;
-  border: none;
-  background: transparent;
-  color: #fff;
-  font-size: 15px;
-  font-weight: 700;
-  padding: 8px;
-}
-.cam-hint {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 120px;
-  text-align: center;
-  color: #fde68a;
-  font-size: 13px;
-}
-.cam-error {
-  margin: auto;
-  max-width: 320px;
-  text-align: center;
-  color: #fff;
-  padding: 24px;
-  display: grid;
-  gap: 14px;
-}
-.cam-cancel {
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  background: transparent;
-  color: #fff;
-  border-radius: 10px;
-  padding: 10px 14px;
-  font-size: 14px;
+  gap: 10px;
+  width: 100%;
+  padding: 14px;
+  font-size: 16px;
   font-weight: 600;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
 }
+.photo-menu-item:hover { background: var(--panel-2); border-color: var(--accent); }
+
+/* Alineación de los íconos (react-icons) junto al texto. */
+button svg,
+.card-dates svg,
+.thumb-count svg,
+.age-flag svg,
+.warn svg,
+.date-filter svg,
+.detail-meta svg,
+.auth-status svg,
+.about-links svg,
+.about-step-icon svg,
+.dash-section svg,
+.auth-note svg { vertical-align: -0.14em; }
+.icon-btn svg { vertical-align: middle; }
 
 .photo-grid {
   display: grid;
@@ -489,20 +431,23 @@ button {
 
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
-/* Reportar contenido: acción discreta y secundaria (no compite con las de autoridad). */
-.report-abuse { margin-top: 14px; }
+/* Reportar contenido: acción secundaria pero visible (antes pasaba desapercibida). */
+.report-abuse { margin-top: 16px; }
 .report-abuse-btn {
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-size: 12px;
-  padding: 4px 0;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--danger);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 9px 14px;
+  border-radius: 10px;
 }
-.report-abuse-btn:hover:not(:disabled) { color: var(--danger); }
+.report-abuse-btn:hover:not(:disabled) { background: #fef2f2; border-color: var(--danger); }
 .report-abuse-btn:disabled { opacity: 0.6; cursor: default; }
-.report-abuse-done { font-size: 12px; color: #15803d; font-weight: 600; }
+.report-abuse-done { font-size: 14px; color: #15803d; font-weight: 600; }
 
 .tag {
   display: inline-block;

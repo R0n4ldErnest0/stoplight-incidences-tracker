@@ -1,7 +1,9 @@
 import { useState } from 'react'
+import { FiX, FiFlag, FiAlertTriangle, FiExternalLink } from 'react-icons/fi'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
 import { titleCase } from '../data/peru.js'
+import { useBackClose } from '../useBackClose.js'
 import StatusBadge from './StatusBadge.jsx'
 
 function fmtDate(iso) {
@@ -31,6 +33,8 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
 
   const [flagged, setFlagged] = useState(false)
   const [flagging, setFlagging] = useState(false)
+
+  useBackClose(onClose) // el botón "atrás" del teléfono cierra este detalle
 
   async function setStatus(status) {
     const note = isAdmin ? 'Actualizado por la autoridad' : ''
@@ -68,7 +72,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <h2>{incident.title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">×</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Cerrar"><FiX /></button>
         </div>
         <div className="drawer-body">
           {photos.length > 0 ? (
@@ -88,13 +92,13 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           <div style={{ marginBottom: 10 }}>
             <StatusBadge status={incident.status} />{' '}
             {age > 90 && incident.status !== 'resolved' && (
-              <span className="age-flag">⚠ {age} días sin resolver</span>
+              <span className="age-flag"><FiAlertTriangle /> {age} días sin resolver</span>
             )}
           </div>
 
           {isAdmin && incident.flags > 0 && (
             <div className="warn" style={{ marginBottom: 10 }}>
-              🚩 {incident.flags} reporte(s) de la comunidad
+              <FiFlag /> {incident.flags} reporte(s) de la comunidad
               {incident.hidden ? ' · OCULTO del público hasta revisión' : ''}
             </div>
           )}
@@ -106,7 +110,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
 
           <div style={{ marginTop: 14 }}>
             <a className="btn btn-sm" href={gmaps} target="_blank" rel="noreferrer">
-              🧭 Abrir en Google Maps
+              <FiExternalLink /> Abrir en Google Maps
             </a>
           </div>
 
@@ -120,7 +124,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
                 onClick={flag}
                 disabled={flagging}
               >
-                {flagging ? 'Enviando…' : '🚩 Reportar contenido'}
+                <FiFlag /> {flagging ? 'Enviando…' : 'Reportar contenido inapropiado'}
               </button>
             )}
           </div>

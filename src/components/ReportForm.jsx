@@ -5,7 +5,8 @@ import { LIMA_CENTER, FAULT_TYPES } from '../constants.js'
 import { createIncident, findNearby } from '../data/store.js'
 import { departamentos, provincias, distritos, titleCase } from '../data/peru.js'
 import { reverseGeocodeUbigeo } from '../data/geo.js'
-import CameraCapture from './CameraCapture.jsx'
+import { FiCamera, FiImage, FiMapPin, FiX } from 'react-icons/fi'
+import { useBackClose } from '../useBackClose.js'
 
 const MAX_PHOTOS = 4
 
@@ -58,8 +59,11 @@ export default function ReportForm({ onClose, onCreated }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [nearby, setNearby] = useState([])
-  const [cameraOpen, setCameraOpen] = useState(false)
+  const [photoMenu, setPhotoMenu] = useState(false)
+  const cameraRef = useRef(null)
   const galleryRef = useRef(null)
+
+  useBackClose(onClose) // el botón "atrás" del teléfono cierra este formulario
 
   // Busca reportes cercanos cada vez que cambia la ubicación elegida.
   useEffect(() => {
@@ -219,7 +223,7 @@ export default function ReportForm({ onClose, onCreated }) {
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <h2>Reportar semáforo</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar">×</button>
+          <button className="icon-btn" onClick={onClose} aria-label="Cerrar"><FiX /></button>
         </div>
         <form className="drawer-body" onSubmit={submit}>
           {error && <div className="warn">{error}</div>}
@@ -230,7 +234,17 @@ export default function ReportForm({ onClose, onCreated }) {
             <div className="help" style={{ marginTop: 0, marginBottom: 8 }}>
               Toma una foto o elige imágenes de tu dispositivo. Hasta {MAX_PHOTOS}.
             </div>
-            {/* Input oculto para la galería (lo usa la cámara y el respaldo). */}
+            {/* Dos inputs ocultos: uno abre la cámara (capture, con su propia
+                vista previa antes de aceptar), otro la galería. Un botón los
+                ofrece en un menú, para que ambos caminos funcionen en el móvil. */}
+            <input
+              ref={cameraRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              hidden
+              onChange={onPhotoChange}
+            />
             <input
               ref={galleryRef}
               type="file"
@@ -242,11 +256,36 @@ export default function ReportForm({ onClose, onCreated }) {
             <button
               type="button"
               className="btn btn-photo"
-              onClick={() => setCameraOpen(true)}
+              onClick={() => setPhotoMenu((v) => !v)}
               disabled={photosFull}
+              aria-expanded={photoMenu}
             >
-              📷 {photos.length ? 'Añadir otra foto' : 'Añadir foto'}
+              <FiCamera /> {photos.length ? 'Añadir otra foto' : 'Añadir foto'}
             </button>
+            {photoMenu && (
+              <div className="photo-menu">
+                <button
+                  type="button"
+                  className="photo-menu-item"
+                  onClick={() => {
+                    setPhotoMenu(false)
+                    cameraRef.current?.click()
+                  }}
+                >
+                  <FiCamera /> Tomar foto
+                </button>
+                <button
+                  type="button"
+                  className="photo-menu-item"
+                  onClick={() => {
+                    setPhotoMenu(false)
+                    galleryRef.current?.click()
+                  }}
+                >
+                  <FiImage /> Elegir de galería
+                </button>
+              </div>
+            )}
 
             {photos.length > 0 && (
               <div className="photo-grid">
@@ -276,7 +315,7 @@ export default function ReportForm({ onClose, onCreated }) {
               onClick={useMyLocation}
               disabled={locating}
             >
-              {locating ? 'Ubicando…' : '📍 Usar mi ubicación'}
+              {locating ? 'Ubicando…' : <><FiMapPin /> Usar mi ubicación</>}
             </button>
             <div className="coords" style={{ marginTop: 6 }}>
               {pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'Sin ubicación · o toca el mapa'}
@@ -385,19 +424,6 @@ export default function ReportForm({ onClose, onCreated }) {
             Tu reporte será público en el mapa para dar visibilidad y exigir su reparación.
           </div>
         </form>
-
-        {cameraOpen && (
-          <CameraCapture
-            count={photos.length}
-            max={MAX_PHOTOS}
-            onCapture={(dataUrl) => addPhotoDataUrls([dataUrl])}
-            onPickGallery={() => {
-              setCameraOpen(false)
-              galleryRef.current?.click()
-            }}
-            onClose={() => setCameraOpen(false)}
-          />
-        )}
       </div>
     </div>
   )
