@@ -43,3 +43,15 @@ test('report form leads with photo capture options', async ({ page }) => {
   await expect(page.getByRole('button', { name: /Tomar foto/ })).toBeVisible()
   await expect(page.getByRole('button', { name: /Subir de galería/ })).toBeVisible()
 })
+
+test('can flag an incident as abuse from its detail', async ({ page }) => {
+  await page.goto('/')
+  // Aceptamos el diálogo de confirmación del navegador.
+  page.on('dialog', (d) => d.accept())
+  await page.getByRole('button', { name: /Lista/ }).click()
+  await page.locator('.card').first().click()
+  const flagBtn = page.getByRole('button', { name: /Reportar contenido/ })
+  await expect(flagBtn).toBeVisible() // el detalle abrió
+  await flagBtn.click()
+  await expect(page.getByText(/Gracias\. Un revisor/)).toBeVisible()
+})

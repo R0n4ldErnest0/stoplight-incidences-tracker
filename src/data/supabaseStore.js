@@ -30,6 +30,8 @@ function mapRow(row) {
     status: row.status,
     photos,
     photo: photos[0] || null, // alias de la principal (miniaturas de lista/mapa)
+    flags: row.flags || 0,
+    hidden: row.hidden || false,
     createdAt: row.created_at,
     history: history.length
       ? history
@@ -144,6 +146,14 @@ export async function updateStatus(id, status, note = '') {
     .insert({ incident_id: id, status, note })
   if (e2) throw e2
   return getIncident(id)
+}
+
+// Reporta un incidente como abuso (contenido inapropiado/falso). Devuelve el
+// nuevo conteo de reportes. La ocultación automática la maneja la BD (RPC).
+export async function flagIncident(id) {
+  const { data, error } = await supabase.rpc('flag_incident', { target: id })
+  if (error) throw error
+  return { id, flags: data ?? 0 }
 }
 
 export async function getStats() {

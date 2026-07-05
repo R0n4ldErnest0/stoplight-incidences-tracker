@@ -1,5 +1,6 @@
+import { useState } from 'react'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
-import { updateStatus, ageDays } from '../data/store.js'
+import { updateStatus, flagIncident, ageDays } from '../data/store.js'
 import StatusBadge from './StatusBadge.jsx'
 
 function fmtDate(iso) {
@@ -22,6 +23,9 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
       ? [incident.photo]
       : []
 
+  const [flagged, setFlagged] = useState(false)
+  const [flagging, setFlagging] = useState(false)
+
   async function setStatus(status) {
     const note = isAdmin ? 'Actualizado por la autoridad' : ''
     try {
@@ -30,6 +34,26 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
     } catch (err) {
       console.error(err)
       alert('No se pudo actualizar el estado: ' + (err.message || 'error'))
+    }
+  }
+
+  // Reporta el contenido como inapropiado/falso. Al acumular varios reportes,
+  // la BD lo oculta del mapa público hasta que un revisor lo verifique.
+  async function flag() {
+    if (flagged || flagging) return
+    const ok = window.confirm(
+      '¿Reportar este contenido como inapropiado o falso? Un revisor lo verificará.'
+    )
+    if (!ok) return
+    setFlagging(true)
+    try {
+      await flagIncident(incident.id)
+      setFlagged(true)
+    } catch (err) {
+      console.error(err)
+      alert('No se pudo enviar el reporte: ' + (err.message || 'error'))
+    } finally {
+      setFlagging(false)
     }
   }
 
@@ -62,6 +86,13 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             )}
           </div>
 
+          {isAdmin && incident.flags > 0 && (
+            <div className="warn" style={{ marginBottom: 10 }}>
+              🚩 {incident.flags} reporte(s) de la comunidad
+              {incident.hidden ? ' · OCULTO del público hasta revisión' : ''}
+            </div>
+          )}
+
           <p className="detail-meta"><b>Falla:</b> {faultLabel(incident.faultType)}</p>
           <p className="detail-meta"><b>Distrito:</b> {incident.district}</p>
           <p className="detail-meta"><b>Reportado:</b> {fmtDate(incident.createdAt)} ({age} días)</p>
@@ -71,6 +102,21 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             <a className="btn btn-sm" href={gmaps} target="_blank" rel="noreferrer">
               🧭 Abrir en Google Maps
             </a>
+          </div>
+
+          <div className="report-abuse">
+            {flagged ? (
+              <span className="report-abuse-done">✓ Gracias. Un revisor lo verificará.</span>
+            ) : (
+              <button
+                type="button"
+                className="report-abuse-btn"
+                onClick={flag}
+                disabled={flagging}
+              >
+                {flagging ? 'Enviando…' : '🚩 Reportar contenido'}
+              </button>
+            )}
           </div>
 
           <div className="section-title">Historial</div>

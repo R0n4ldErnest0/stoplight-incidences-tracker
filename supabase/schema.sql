@@ -25,12 +25,18 @@ create table if not exists public.incidents (
               check (status in ('reported','acknowledged','in_progress','resolved','duplicate')),
   photo_url   text,                       -- foto principal (compatibilidad)
   photos      text[] not null default '{}', -- todas las fotos del reporte (URLs públicas)
+  flags       int not null default 0,      -- cuántas personas reportaron el contenido
+  hidden      boolean not null default false, -- se oculta del público tras varios reportes
   created_at  timestamptz not null default now()
 );
 
--- Para bases ya creadas antes de soportar varias fotos: agrega la columna.
+-- Para bases ya creadas antes de estas columnas: agrégalas si faltan.
 alter table public.incidents
   add column if not exists photos text[] not null default '{}';
+alter table public.incidents
+  add column if not exists flags int not null default 0;
+alter table public.incidents
+  add column if not exists hidden boolean not null default false;
 
 create index if not exists incidents_status_idx on public.incidents (status);
 create index if not exists incidents_geom_idx on public.incidents using gist (geom);
@@ -63,14 +69,42 @@ create trigger trg_initial_status
   after insert on public.incidents
   for each row execute function public.add_initial_status_change();
 
+-- 4b) Reportar contenido de abuso (foto/relato inapropiado o falso) -----------
+--     `security definer` para que el público pueda sumar un reporte SIN tener
+--     permiso general de UPDATE sobre incidents. Al llegar al umbral, el
+--     contenido se oculta del mapa público hasta que un revisor lo revise.
+create or replace function public.flag_incident(target uuid)
+returns int
+language plpgsql
+security definer
+set search_path = public as $$
+declare
+  threshold constant int := 5;
+  new_count int;
+begin
+  update public.incidents
+     set flags  = flags + 1,
+         hidden = (flags + 1) >= threshold
+   where id = target
+   returning flags into new_count;
+  return new_count;  -- null si el id no existe
+end;
+$$;
+
+grant execute on function public.flag_incident(uuid) to anon, authenticated;
+
 -- 5) Seguridad a nivel de fila (RLS) -----------------------------------------
 alter table public.incidents enable row level security;
 alter table public.status_changes enable row level security;
 
--- Lectura pública: cualquiera ve el mapa (transparencia).
+-- Lectura pública: cualquiera ve el mapa (transparencia), EXCEPTO el contenido
+-- ocultado por reportes de abuso. Los revisores sí ven todo (para moderar).
 drop policy if exists "lectura pública incidents" on public.incidents;
 create policy "lectura pública incidents" on public.incidents
-  for select using (true);
+  for select using (
+    not hidden
+    or (auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer'
+  );
 
 drop policy if exists "lectura pública status" on public.status_changes;
 create policy "lectura pública status" on public.status_changes

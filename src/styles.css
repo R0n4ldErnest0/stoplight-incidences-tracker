@@ -379,6 +379,21 @@ button {
 
 .admin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* Reportar contenido: acción discreta y secundaria (no compite con las de autoridad). */
+.report-abuse { margin-top: 14px; }
+.report-abuse-btn {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.report-abuse-btn:hover:not(:disabled) { color: #fca5a5; }
+.report-abuse-btn:disabled { opacity: 0.6; cursor: default; }
+.report-abuse-done { font-size: 12px; color: #86efac; }
+
 .tag {
   display: inline-block;
   background: var(--panel-2);
