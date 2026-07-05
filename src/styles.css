@@ -290,6 +290,96 @@ button {
 .btn-photo:hover:not(:disabled) { background: rgba(2, 132, 199, 0.14); }
 .btn-photo:disabled { opacity: 0.45; cursor: not-allowed; }
 
+/* Cámara dentro de la app (vista en vivo + disparador + galería). */
+.cam-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+}
+.cam-video { flex: 1; width: 100%; min-height: 0; object-fit: cover; background: #000; }
+.cam-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 26px;
+  line-height: 1;
+}
+.cam-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 22px;
+  padding-bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  background: #000;
+}
+.cam-gallery {
+  justify-self: start;
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 24px;
+}
+.cam-shutter {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  border: 5px solid #fff;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.25);
+}
+.cam-shutter:active:not(:disabled) { transform: scale(0.94); }
+.cam-shutter:disabled { opacity: 0.4; }
+.cam-done {
+  justify-self: end;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 8px;
+}
+.cam-hint {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 120px;
+  text-align: center;
+  color: #fde68a;
+  font-size: 13px;
+}
+.cam-error {
+  margin: auto;
+  max-width: 320px;
+  text-align: center;
+  color: #fff;
+  padding: 24px;
+  display: grid;
+  gap: 14px;
+}
+.cam-cancel {
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  background: transparent;
+  color: #fff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
 .photo-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -471,6 +561,7 @@ button {
 }
 .list {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* evita que las tarjetas desborden a la derecha en móvil */
   gap: 12px;
   max-width: 820px;
   margin: 0 auto;
@@ -586,7 +677,7 @@ button {
 .bar-value { font-size: 13px; font-weight: 700; text-align: right; }
 
 /* Oldest unresolved */
-.oldest { display: grid; gap: 8px; }
+.oldest { display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .oldest-row {
   display: flex;
   align-items: center;
@@ -752,15 +843,24 @@ button {
     font-size: 14px;
   }
 
-  /* Resumen: que las fichas envuelvan en varias filas en vez de obligar a
-     desplazarse a la derecha para ver las que quedan ocultas. */
+  /* Resumen compacto: fichas más pequeñas para que ocupen menos alto (no tapan
+     tanto el mapa) y envuelvan en pocas filas sin scroll horizontal. */
   .stats {
     flex-wrap: wrap;
     overflow-x: visible;
+    padding: 6px 12px;
+    gap: 6px;
   }
-  .stat { flex: 0 0 auto; }
+  .stat {
+    flex: 0 0 auto;
+    padding: 3px 9px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+  .stat b { font-size: 14px; margin-right: 4px; }
   .stat-spacer { display: none; }
-  .date-filter { flex-basis: 100%; justify-content: flex-start; }
+  .date-filter { flex-basis: auto; font-size: 12px; }
+  .date-select { padding: 3px 8px; font-size: 12px; }
 }
 
 @media (max-width: 480px) {

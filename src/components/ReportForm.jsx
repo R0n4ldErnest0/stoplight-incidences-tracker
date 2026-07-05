@@ -5,6 +5,7 @@ import { LIMA_CENTER, FAULT_TYPES } from '../constants.js'
 import { createIncident, findNearby } from '../data/store.js'
 import { departamentos, provincias, distritos, titleCase } from '../data/peru.js'
 import { reverseGeocodeUbigeo } from '../data/geo.js'
+import CameraCapture from './CameraCapture.jsx'
 
 const MAX_PHOTOS = 4
 
@@ -57,7 +58,8 @@ export default function ReportForm({ onClose, onCreated }) {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [nearby, setNearby] = useState([])
-  const photoRef = useRef(null)
+  const [cameraOpen, setCameraOpen] = useState(false)
+  const galleryRef = useRef(null)
 
   // Busca reportes cercanos cada vez que cambia la ubicación elegida.
   useEffect(() => {
@@ -97,17 +99,26 @@ export default function ReportForm({ onClose, onCreated }) {
     }
   }, [pos])
 
+  // Agrega dataURLs respetando el máximo (usa el estado previo para no perder
+  // fotos si llegan varias seguidas, p. ej. disparos consecutivos de la cámara).
+  function addPhotoDataUrls(urls) {
+    setPhotos((prev) => {
+      const free = MAX_PHOTOS - prev.length
+      if (free <= 0) return prev
+      return [...prev, ...urls.slice(0, free)]
+    })
+  }
+
   async function addFiles(fileList) {
     const files = Array.from(fileList || []).filter((f) => f.type.startsWith('image/'))
     if (!files.length) return
-    const free = MAX_PHOTOS - photos.length
-    if (free <= 0) {
+    if (photos.length >= MAX_PHOTOS) {
       setError(`Máximo ${MAX_PHOTOS} fotos por reporte.`)
       return
     }
     setError('')
-    const dataUrls = await Promise.all(files.slice(0, free).map(readFileAsDataUrl))
-    setPhotos((prev) => [...prev, ...dataUrls].slice(0, MAX_PHOTOS))
+    const dataUrls = await Promise.all(files.map(readFileAsDataUrl))
+    addPhotoDataUrls(dataUrls)
   }
 
   function onPhotoChange(e) {
@@ -219,8 +230,9 @@ export default function ReportForm({ onClose, onCreated }) {
             <div className="help" style={{ marginTop: 0, marginBottom: 8 }}>
               Toma una foto o elige imágenes de tu dispositivo. Hasta {MAX_PHOTOS}.
             </div>
+            {/* Input oculto para la galería (lo usa la cámara y el respaldo). */}
             <input
-              ref={photoRef}
+              ref={galleryRef}
               type="file"
               accept="image/*"
               multiple
@@ -230,7 +242,7 @@ export default function ReportForm({ onClose, onCreated }) {
             <button
               type="button"
               className="btn btn-photo"
-              onClick={() => photoRef.current?.click()}
+              onClick={() => setCameraOpen(true)}
               disabled={photosFull}
             >
               📷 {photos.length ? 'Añadir otra foto' : 'Añadir foto'}
@@ -373,6 +385,19 @@ export default function ReportForm({ onClose, onCreated }) {
             Tu reporte será público en el mapa para dar visibilidad y exigir su reparación.
           </div>
         </form>
+
+        {cameraOpen && (
+          <CameraCapture
+            count={photos.length}
+            max={MAX_PHOTOS}
+            onCapture={(dataUrl) => addPhotoDataUrls([dataUrl])}
+            onPickGallery={() => {
+              setCameraOpen(false)
+              galleryRef.current?.click()
+            }}
+            onClose={() => setCameraOpen(false)}
+          />
+        )}
       </div>
     </div>
   )
