@@ -5,7 +5,7 @@ import { LIMA_CENTER, FAULT_TYPES } from '../constants.js'
 import { createIncident, findNearby } from '../data/store.js'
 import { departamentos, provincias, distritos, titleCase } from '../data/peru.js'
 import { reverseGeocodeUbigeo } from '../data/geo.js'
-import { FiCamera, FiImage, FiMapPin, FiX } from 'react-icons/fi'
+import { FiCamera, FiImage, FiMapPin, FiX, FiChevronDown } from 'react-icons/fi'
 import { useBackClose } from '../useBackClose.js'
 
 const MAX_PHOTOS = 4
@@ -61,6 +61,7 @@ export default function ReportForm({ onClose, onCreated }) {
   const [nearby, setNearby] = useState([])
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
+  const faultSectionRef = useRef(null)
 
   useBackClose(onClose) // el botón "atrás" del teléfono cierra este formulario
 
@@ -305,12 +306,25 @@ export default function ReportForm({ onClose, onCreated }) {
               {pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : 'Sin ubicación · o toca el mapa'}
             </div>
             {locHint && <div className="warn" style={{ margin: '8px 0 0' }}>{locHint}</div>}
-            <div className="mini-map" style={{ marginTop: 8 }}>
-              <MapContainer center={LIMA_CENTER} zoom={12} scrollWheelZoom style={{ height: '100%' }}>
-                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-                <ClickToPlace pos={pos} setPos={setPos} />
-                <Recenter pos={pos} />
-              </MapContainer>
+            {/* El mapa captura los gestos de arrastre para desplazarse (pan), así
+                que en móvil el dedo puede quedar "atrapado" ahí en vez de bajar
+                la página. Este botón, pegado al fondo mientras el mapa está a la
+                vista, deja seguir sin depender de arrastrar fuera de él. */}
+            <div className="scroll-hint-wrap">
+              <div className="mini-map" style={{ marginTop: 8 }}>
+                <MapContainer center={LIMA_CENTER} zoom={12} scrollWheelZoom style={{ height: '100%' }}>
+                  <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+                  <ClickToPlace pos={pos} setPos={setPos} />
+                  <Recenter pos={pos} />
+                </MapContainer>
+              </div>
+              <button
+                type="button"
+                className="scroll-hint-btn"
+                onClick={() => faultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                <FiChevronDown /> Seguir completando el formulario
+              </button>
             </div>
             <div className="help">Ubicación por OpenStreetMap. Toca el mapa para ajustar el punto.</div>
           </div>
@@ -381,7 +395,7 @@ export default function ReportForm({ onClose, onCreated }) {
           </div>
 
           {/* ③ La falla (qué pasa con el semáforo). */}
-          <div className="form-section-title">3 · La falla</div>
+          <div className="form-section-title" ref={faultSectionRef}>3 · La falla</div>
           <div className="field">
             <label>Tipo de falla</label>
             <select className="select" value={faultType} onChange={(e) => setFaultType(e.target.value)}>

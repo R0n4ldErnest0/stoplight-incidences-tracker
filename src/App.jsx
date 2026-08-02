@@ -7,6 +7,7 @@ import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
+import OnboardingModal, { ONBOARDING_SEEN_KEY } from './components/OnboardingModal.jsx'
 import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
@@ -20,12 +21,20 @@ export default function App() {
   const [showReport, setShowReport] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(
+    () => !localStorage.getItem(ONBOARDING_SEEN_KEY)
+  )
   const [filter, setFilter] = useState('all')
   const [dateRange, setDateRange] = useState('all')
   const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard'
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
   const [authState, setAuthState] = useState({ user: null, isReviewer: false, loading: true })
+
+  function dismissOnboarding() {
+    localStorage.setItem(ONBOARDING_SEEN_KEY, '1')
+    setShowOnboarding(false)
+  }
 
   async function refresh() {
     try {
@@ -222,6 +231,16 @@ export default function App() {
         )}
 
         {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+
+        {showOnboarding && (
+          <OnboardingModal
+            onClose={dismissOnboarding}
+            onMoreInfo={() => {
+              dismissOnboarding()
+              setShowAbout(true)
+            }}
+          />
+        )}
       </div>
     </div>
   )

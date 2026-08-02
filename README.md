@@ -9,10 +9,13 @@ backlog público y accionable que permite exigir reparaciones.
 
 ## Por qué
 
-Hoy reportar un semáforo en Lima se hace por WhatsApp o apps donde el reporte es
-un "agujero negro": no sabes si alguien lo vio ni cuándo se reparará. Este
-proyecto agrega lo que falta: **visibilidad pública, historial y rendición de
-cuentas**.
+Al buscar cómo reportar un semáforo malogrado en Lima solo encontré publicaciones
+sueltas en Facebook con un número de teléfono o WhatsApp, sin señal de que
+alguien los atendiera. Y aunque reportaras, como ciudadano no tenías forma de
+saber si la autoridad vio el problema: terminabas preguntando una y otra vez,
+sin saber si era lentitud o simple desidia. Este proyecto agrega lo que falta:
+**visibilidad pública, historial y rendición de cuentas**, para que cualquiera
+vea el estado de su reporte y cuánto tiempo lleva esperando.
 
 ## Demo
 
