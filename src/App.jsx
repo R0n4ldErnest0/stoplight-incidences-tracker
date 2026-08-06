@@ -14,6 +14,10 @@ import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 
 const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
+// Etiquetas recortadas solo para el resumen flotante (mobile, vista mapa),
+// donde el espacio es angosto. En todo lo demás se usa STATUSES[key].label.
+const SHORT_LABEL = { in_progress: 'En rep.' }
+
 export default function App() {
   const [incidents, setIncidents] = useState([])
   const [stats, setStats] = useState(EMPTY_STATS)
@@ -150,7 +154,10 @@ export default function App() {
         </div>
       )}
 
-      <div className="stats">
+      {/* En mapa + mobile, esta franja se envuelve en 2-3 filas y empuja el
+          mapa hacia abajo, así que ahí se oculta (ver .stats-mapview) y el
+          resumen flota sobre el mapa en su lugar (.map-stats-float, abajo). */}
+      <div className={view === 'map' ? 'stats stats-mapview' : 'stats'}>
           <button
             className="stat"
             style={{ borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }}
@@ -196,6 +203,35 @@ export default function App() {
           <IncidentList incidents={visible} onSelect={setSelectedId} />
         ) : (
           <DashboardView incidents={dateFiltered} onSelect={setSelectedId} />
+        )}
+
+        {/* Solo visible por CSS bajo el ancho donde la franja de arriba se
+            envolvería (ver .map-stats-float en styles.css); en escritorio la
+            franja normal ya alcanza y esto queda oculto. */}
+        {view === 'map' && (
+          <div className="map-stats-float">
+            <button
+              className="mf-chip"
+              style={{ outlineColor: filter === 'all' ? 'var(--accent)' : 'transparent' }}
+              onClick={() => setFilter('all')}
+            >
+              <span className="mf-num">{stats.total}</span>
+              <span className="mf-label">Total</span>
+            </button>
+            <div className="mf-div" />
+            {STATUS_ORDER.map((key) => (
+              <button
+                key={key}
+                className="mf-chip"
+                style={{ outlineColor: filter === key ? STATUSES[key].color : 'transparent' }}
+                onClick={() => setFilter(key)}
+              >
+                <span className="mf-dot" style={{ background: STATUSES[key].color }} />
+                <span className="mf-num">{stats.byStatus[key] || 0}</span>
+                <span className="mf-label">{SHORT_LABEL[key] || STATUSES[key].label}</span>
+              </button>
+            ))}
+          </div>
         )}
 
         <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
