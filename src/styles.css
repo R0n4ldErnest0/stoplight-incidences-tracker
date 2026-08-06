@@ -363,23 +363,30 @@ button svg,
 
 .mini-map { height: 280px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
 
-/* Envuelve el mini-mapa para que el botón "seguir" quede pegado (sticky) al
-   fondo mientras el mapa está a la vista, y se vaya con el resto al pasarlo. */
-.scroll-hint-wrap { position: relative; padding-bottom: 46px; }
-.scroll-hint-btn {
-  position: sticky;
-  bottom: 10px;
+/* El botón "Seguir" vive dentro de este recuadro (de alto fijo, el mismo del
+   mapa), anclado a una esquina. A propósito NO es "sticky": un sticky pegado
+   al viewport, en un mapa más alto que la pantalla, terminaría flotando sobre
+   el mapa mientras se hace scroll y bloquearía los toques para fijar el punto
+   (justo el bug que queríamos evitar). Al vivir dentro de un contenedor de
+   tamaño fijo, siempre está a la vista sin tapar el resto del mapa.
+   Esquina superior derecha: la izquierda la usa el zoom (+/-) de Leaflet y la
+   inferior derecha su atribución ("Leaflet | © OpenStreetMap").
+*/
+.map-frame { position: relative; }
+.map-continue-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  z-index: 1; /* por encima del recuadro del mapa (mismo contenedor, sin z-index) */
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin: 10px auto 0;
+  gap: 4px;
   border: 1px solid var(--accent);
   background: var(--panel);
   color: var(--accent-strong);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  padding: 8px 16px;
+  padding: 6px 12px;
   border-radius: 999px;
   box-shadow: var(--shadow);
 }

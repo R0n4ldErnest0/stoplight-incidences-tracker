@@ -307,11 +307,14 @@ export default function ReportForm({ onClose, onCreated }) {
             </div>
             {locHint && <div className="warn" style={{ margin: '8px 0 0' }}>{locHint}</div>}
             {/* El mapa captura los gestos de arrastre para desplazarse (pan), así
-                que en móvil el dedo puede quedar "atrapado" ahí en vez de bajar
-                la página. Este botón, pegado al fondo mientras el mapa está a la
-                vista, deja seguir sin depender de arrastrar fuera de él. */}
-            <div className="scroll-hint-wrap">
-              <div className="mini-map" style={{ marginTop: 8 }}>
+                que en móvil el dedo puede quedar "atrapado" ahí en vez de bajar la
+                página. El botón vive DENTRO del recuadro fijo del mapa (esquina),
+                nunca se superpone al resto del mapa ni depende del scroll — a
+                diferencia de un botón "sticky" pegado al viewport, que en mapas
+                más altos que la pantalla queda flotando sobre el mapa y bloquea
+                los toques para fijar el punto. */}
+            <div className="map-frame" style={{ marginTop: 8 }}>
+              <div className="mini-map">
                 <MapContainer center={LIMA_CENTER} zoom={12} scrollWheelZoom style={{ height: '100%' }}>
                   <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                   <ClickToPlace pos={pos} setPos={setPos} />
@@ -320,10 +323,10 @@ export default function ReportForm({ onClose, onCreated }) {
               </div>
               <button
                 type="button"
-                className="scroll-hint-btn"
+                className="map-continue-btn"
                 onClick={() => faultSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               >
-                <FiChevronDown /> Seguir completando el formulario
+                <FiChevronDown /> Seguir
               </button>
             </div>
             <div className="help">Ubicación por OpenStreetMap. Toca el mapa para ajustar el punto.</div>
