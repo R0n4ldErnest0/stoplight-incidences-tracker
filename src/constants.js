@@ -50,11 +50,13 @@ export const FAULT_TYPES = [
 ]
 
 // Rangos de fecha para filtrar incidencias por antigüedad del reporte.
+// 'custom' no tiene `days` fijo: usa un rango de inicio/fin elegido a mano.
 export const DATE_RANGES = [
   { key: 'all', label: 'Todo el tiempo', days: null },
   { key: '7d', label: 'Últimos 7 días', days: 7 },
   { key: '30d', label: 'Últimos 30 días', days: 30 },
   { key: '90d', label: 'Últimos 90 días', days: 90 },
+  { key: 'custom', label: 'Personalizado', days: null },
 ]
 
 // Distritos de Lima (lista corta para el demo).

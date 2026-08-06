@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff } from 'react-icons/fi'
+import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff, FiFilter } from 'react-icons/fi'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import DashboardView from './components/DashboardView.jsx'
@@ -14,6 +14,61 @@ import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 
 const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
+function fmtShortDate(iso) {
+  return new Date(`${iso}T00:00:00`).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' })
+}
+
+// Etiqueta corta del rango de fecha activo, para la píldora colapsada del
+// resumen flotante (mobile). null cuando el rango es 'all' (nada que mostrar).
+function activeDateLabel(dateRange, customStart, customEnd) {
+  if (dateRange === 'all') return null
+  if (dateRange === 'custom') {
+    if (!customStart && !customEnd) return null
+    return `${customStart ? fmtShortDate(customStart) : '…'}–${customEnd ? fmtShortDate(customEnd) : '…'}`
+  }
+  return DATE_RANGES.find((r) => r.key === dateRange)?.label
+}
+
+// Selector de rango de fecha, reutilizado en la franja de escritorio, las
+// barras de Lista/Transparencia y el resumen flotante (mobile, `compact`).
+function DateRangeSelect({ compact, value, onChange, customStart, customEnd, onCustomStart, onCustomEnd }) {
+  return (
+    <label className={compact ? 'mf-daterow' : 'date-filter'} title="Filtrar por antigüedad del reporte">
+      <FiCalendar />
+      <select
+        className={compact ? 'mf-date-select' : 'date-select'}
+        value={value}
+        onChange={onChange}
+      >
+        {DATE_RANGES.map((r) => (
+          <option key={r.key} value={r.key}>{r.label}</option>
+        ))}
+      </select>
+      {value === 'custom' && (
+        <span className={compact ? 'mf-custom-dates' : 'custom-dates'}>
+          <input
+            type="date"
+            className={compact ? 'mf-date-input' : 'date-select'}
+            value={customStart}
+            max={customEnd || undefined}
+            onChange={onCustomStart}
+            aria-label="Desde"
+          />
+          <span className="custom-dates-sep">–</span>
+          <input
+            type="date"
+            className={compact ? 'mf-date-input' : 'date-select'}
+            value={customEnd}
+            min={customStart || undefined}
+            onChange={onCustomEnd}
+            aria-label="Hasta"
+          />
+        </span>
+      )}
+    </label>
+  )
+}
+
 export default function App() {
   const [incidents, setIncidents] = useState([])
   const [stats, setStats] = useState(EMPTY_STATS)
@@ -26,6 +81,9 @@ export default function App() {
   )
   const [filter, setFilter] = useState('all')
   const [dateRange, setDateRange] = useState('all')
+  // Solo se usan cuando dateRange === 'custom' (strings 'YYYY-MM-DD' de <input type="date">).
+  const [customStart, setCustomStart] = useState('')
+  const [customEnd, setCustomEnd] = useState('')
   // Resumen flotante (mobile, vista mapa): el usuario puede ocultarlo; al
   // ocultarlo se reemplaza por una píldora chiquita con el filtro activo.
   const [statsHidden, setStatsHidden] = useState(false)
@@ -64,14 +122,23 @@ export default function App() {
     return unsub
   }, [])
 
-  // Filtro por fecha (antigüedad del reporte). Se aplica antes que el de estado
-  // y también alimenta el panel de transparencia.
+  // Filtro por fecha (antigüedad del reporte, o un rango a mano con 'custom').
+  // Se aplica antes que el de estado y también alimenta el panel de transparencia.
   const dateFiltered = useMemo(() => {
+    if (dateRange === 'custom') {
+      if (!customStart && !customEnd) return incidents
+      const startMs = customStart ? new Date(`${customStart}T00:00:00`).getTime() : -Infinity
+      const endMs = customEnd ? new Date(`${customEnd}T23:59:59.999`).getTime() : Infinity
+      return incidents.filter((i) => {
+        const t = new Date(i.createdAt).getTime()
+        return t >= startMs && t <= endMs
+      })
+    }
     const days = DATE_RANGES.find((r) => r.key === dateRange)?.days
     if (!days) return incidents
     const cutoff = Date.now() - days * 86400000
     return incidents.filter((i) => new Date(i.createdAt).getTime() >= cutoff)
-  }, [incidents, dateRange])
+  }, [incidents, dateRange, customStart, customEnd])
 
   const visible = useMemo(() => {
     if (filter === 'all') return dateFiltered
@@ -156,7 +223,8 @@ export default function App() {
       {/* En mapa + mobile, esta franja se envuelve en 2-3 filas y empuja el
           mapa hacia abajo, así que ahí se oculta (ver .stats-mapview) y el
           resumen flota sobre el mapa en su lugar (.map-stats-float, abajo). */}
-      <div className={view === 'map' ? 'stats stats-mapview' : 'stats'}>
+      {view === 'map' && (
+        <div className="stats stats-mapview">
           <button
             className="stat"
             style={{ borderColor: filter === 'all' ? 'var(--accent)' : 'var(--border)' }}
@@ -179,19 +247,62 @@ export default function App() {
             <div className="stat"><b>{stats.avgDays}</b> días prom. a resolver</div>
           )}
           <div className="stat-spacer" />
-          <label className="date-filter" title="Filtrar por antigüedad del reporte">
-            <FiCalendar />
+          <DateRangeSelect
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            customStart={customStart}
+            customEnd={customEnd}
+            onCustomStart={(e) => setCustomStart(e.target.value)}
+            onCustomEnd={(e) => setCustomEnd(e.target.value)}
+          />
+        </div>
+      )}
+
+      {/* Lista: los botones de estado se envolvían en varias filas en mobile
+          (ver docs_references) — un desplegable es compacto en cualquier ancho. */}
+      {view === 'list' && (
+        <div className="stats">
+          <label className="date-filter" title="Filtrar por estado">
+            <FiFilter />
             <select
               className="date-select"
-              value={dateRange}
-              onChange={(e) => setDateRange(e.target.value)}
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
             >
-              {DATE_RANGES.map((r) => (
-                <option key={r.key} value={r.key}>{r.label}</option>
+              <option value="all">Total ({stats.total})</option>
+              {STATUS_ORDER.map((key) => (
+                <option key={key} value={key}>
+                  {STATUSES[key].label} ({stats.byStatus[key] || 0})
+                </option>
               ))}
             </select>
           </label>
+          <DateRangeSelect
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            customStart={customStart}
+            customEnd={customEnd}
+            onCustomStart={(e) => setCustomStart(e.target.value)}
+            onCustomEnd={(e) => setCustomEnd(e.target.value)}
+          />
         </div>
+      )}
+
+      {/* Transparencia: el filtro de estado no tenía efecto acá (el panel usa
+          dateFiltered, no visible/filter) — se quitó para no confundir. Solo
+          el rango de fecha sí cambia lo que se muestra. */}
+      {view === 'dashboard' && (
+        <div className="stats">
+          <DateRangeSelect
+            value={dateRange}
+            onChange={(e) => setDateRange(e.target.value)}
+            customStart={customStart}
+            customEnd={customEnd}
+            onCustomStart={(e) => setCustomStart(e.target.value)}
+            onCustomEnd={(e) => setCustomEnd(e.target.value)}
+          />
+        </div>
+      )}
 
       <div className="content">
         {loading ? (
@@ -221,6 +332,12 @@ export default function App() {
             />
             <span className="mf-num">{filter === 'all' ? stats.total : (stats.byStatus[filter] || 0)}</span>
             <span className="mf-label">{filter === 'all' ? 'Total' : STATUSES[filter].label}</span>
+            {activeDateLabel(dateRange, customStart, customEnd) && (
+              <>
+                <span className="mf-pill-sep">·</span>
+                <span className="mf-label">{activeDateLabel(dateRange, customStart, customEnd)}</span>
+              </>
+            )}
           </button>
         ) : (
           <div className="map-stats-float">
@@ -253,6 +370,16 @@ export default function App() {
                 <span className="mf-label">{STATUSES[key].label}</span>
               </button>
             ))}
+            <div className="mf-div" />
+            <DateRangeSelect
+              compact
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStart={(e) => setCustomStart(e.target.value)}
+              onCustomEnd={(e) => setCustomEnd(e.target.value)}
+            />
           </div>
         ))}
 

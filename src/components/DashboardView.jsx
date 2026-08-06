@@ -32,6 +32,8 @@ export default function DashboardView({ incidents, onSelect }) {
 
   const maxStatus = Math.max(...STATUS_ORDER.map((k) => d.byStatus[k] || 0), 1)
   const maxDistrict = Math.max(...d.byDistrict.map((x) => x.total), 1)
+  const faultEntries = Object.entries(d.byFault).sort((a, b) => b[1] - a[1])
+  const maxFault = Math.max(...faultEntries.map(([, n]) => n), 1)
 
   return (
     <div className="dash-wrap">
@@ -120,16 +122,21 @@ export default function DashboardView({ incidents, onSelect }) {
           ))}
         </div>
 
-        {/* Tipos de falla */}
+        {/* Tipos de falla: histograma para ver de un vistazo cuáles se repiten más. */}
         <h4 className="dash-section">Tipos de falla</h4>
-        <div className="chips">
-          {Object.entries(d.byFault)
-            .sort((a, b) => b[1] - a[1])
-            .map(([k, n]) => (
-              <span className="chip" key={k}>
-                {faultLabel(k)} <b>{n}</b>
-              </span>
-            ))}
+        <div className="bars">
+          {faultEntries.map(([k, n]) => (
+            <div className="bar-row" key={k}>
+              <span className="bar-label">{faultLabel(k)}</span>
+              <div className="bar-track">
+                <div
+                  className="bar-fill"
+                  style={{ width: `${(n / maxFault) * 100}%`, background: 'var(--accent)' }}
+                />
+              </div>
+              <span className="bar-value">{n}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>

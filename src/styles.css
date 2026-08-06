@@ -185,6 +185,8 @@ button {
   font-size: 13px;
   font-family: inherit;
 }
+.custom-dates { display: inline-flex; align-items: center; gap: 6px; margin-left: 4px; }
+.custom-dates-sep { color: var(--muted); }
 
 /* Resumen flotante sobre el mapa (mobile, vista mapa): reemplaza la franja
    de arriba cuando esta se envolvería en varias filas. Oculto por defecto;
@@ -242,6 +244,31 @@ button {
 .mf-num { font-weight: 800; font-size: 13px; color: var(--text); min-width: 15px; text-align: right; }
 .mf-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
 .mf-div { height: 1px; background: var(--border); margin: 2px 4px; }
+.mf-pill-sep { color: var(--muted); font-size: 11px; }
+
+/* Rango de fecha dentro del resumen flotante (mobile, vista mapa). */
+.mf-daterow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 3px 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.mf-date-select,
+.mf-date-input {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  padding: 2px 4px;
+  font-size: 11px;
+  font-family: inherit;
+  max-width: 108px;
+}
+.mf-custom-dates { display: flex; align-items: center; gap: 4px; margin-top: 2px; }
+.mf-custom-dates .mf-date-input { max-width: 92px; }
 
 /* Píldora chiquita que reemplaza el panel completo cuando el usuario lo
    oculta: solo muestra el filtro activo (o el total), para no perder
