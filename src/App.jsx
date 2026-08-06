@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar } from 'react-icons/fi'
+import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff } from 'react-icons/fi'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import DashboardView from './components/DashboardView.jsx'
@@ -14,10 +14,6 @@ import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 
 const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
-// Etiquetas recortadas solo para el resumen flotante (mobile, vista mapa),
-// donde el espacio es angosto. En todo lo demás se usa STATUSES[key].label.
-const SHORT_LABEL = { in_progress: 'En rep.' }
-
 export default function App() {
   const [incidents, setIncidents] = useState([])
   const [stats, setStats] = useState(EMPTY_STATS)
@@ -30,6 +26,9 @@ export default function App() {
   )
   const [filter, setFilter] = useState('all')
   const [dateRange, setDateRange] = useState('all')
+  // Resumen flotante (mobile, vista mapa): el usuario puede ocultarlo; al
+  // ocultarlo se reemplaza por una píldora chiquita con el filtro activo.
+  const [statsHidden, setStatsHidden] = useState(false)
   const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard'
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
@@ -207,9 +206,32 @@ export default function App() {
 
         {/* Solo visible por CSS bajo el ancho donde la franja de arriba se
             envolvería (ver .map-stats-float en styles.css); en escritorio la
-            franja normal ya alcanza y esto queda oculto. */}
-        {view === 'map' && (
+            franja normal ya alcanza y esto queda oculto. Semitransparente
+            hasta que el usuario pasa el cursor o toca (ver :hover/:focus-within
+            en CSS); el usuario también puede ocultarlo del todo con el ícono. */}
+        {view === 'map' && (statsHidden ? (
+          <button
+            className="map-stats-pill"
+            onClick={() => setStatsHidden(false)}
+            title="Mostrar resumen"
+          >
+            <span
+              className="mf-dot"
+              style={{ background: filter === 'all' ? 'var(--accent)' : STATUSES[filter].color }}
+            />
+            <span className="mf-num">{filter === 'all' ? stats.total : (stats.byStatus[filter] || 0)}</span>
+            <span className="mf-label">{filter === 'all' ? 'Total' : STATUSES[filter].label}</span>
+          </button>
+        ) : (
           <div className="map-stats-float">
+            <button
+              className="mf-hide-btn"
+              onClick={() => setStatsHidden(true)}
+              title="Ocultar resumen"
+              aria-label="Ocultar resumen"
+            >
+              <FiEyeOff />
+            </button>
             <button
               className="mf-chip"
               style={{ outlineColor: filter === 'all' ? 'var(--accent)' : 'transparent' }}
@@ -228,11 +250,11 @@ export default function App() {
               >
                 <span className="mf-dot" style={{ background: STATUSES[key].color }} />
                 <span className="mf-num">{stats.byStatus[key] || 0}</span>
-                <span className="mf-label">{SHORT_LABEL[key] || STATUSES[key].label}</span>
+                <span className="mf-label">{STATUSES[key].label}</span>
               </button>
             ))}
           </div>
-        )}
+        ))}
 
         <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
           <FiPlus /> Reportar semáforo
