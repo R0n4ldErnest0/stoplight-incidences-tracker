@@ -9,6 +9,12 @@ import { FiCamera, FiImage, FiMapPin, FiX, FiChevronDown } from 'react-icons/fi'
 import { useBackClose } from '../useBackClose.js'
 
 const MAX_PHOTOS = 4
+// Comprimimos en el navegador antes de guardar: las fotos de cámara sin
+// tocar pesan varios MB cada una y eran la causa de que publicar tardara.
+// 1600px de lado más largo + calidad 0.8 en JPEG baja el peso ~10-20x sin
+// pérdida de nitidez notable al verla en el mapa o la galería de detalle.
+const PHOTO_MAX_DIMENSION = 1600
+const PHOTO_QUALITY = 0.8
 
 const pickIcon = L.divIcon({
   className: '',
@@ -44,6 +50,39 @@ function readFileAsDataUrl(file) {
   })
 }
 
+// Redimensiona y recomprime una foto (canvas) antes de guardarla. Devuelve
+// un dataURL JPEG. Si algo falla (formato raro, navegador viejo), quien la
+// llama cae de vuelta a `readFileAsDataUrl` con el archivo original.
+function compressImage(file, { maxDimension = PHOTO_MAX_DIMENSION, quality = PHOTO_QUALITY } = {}) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      let { width, height } = img
+      if (width > maxDimension || height > maxDimension) {
+        if (width > height) {
+          height = Math.round((height * maxDimension) / width)
+          width = maxDimension
+        } else {
+          width = Math.round((width * maxDimension) / height)
+          height = maxDimension
+        }
+      }
+      const canvas = document.createElement('canvas')
+      canvas.width = width
+      canvas.height = height
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+      resolve(canvas.toDataURL('image/jpeg', quality))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('No se pudo procesar la imagen'))
+    }
+    img.src = url
+  })
+}
+
 export default function ReportForm({ onClose, onCreated }) {
   const [pos, setPos] = useState(null)
   const [photos, setPhotos] = useState([]) // dataURLs (varias fotos)
@@ -58,6 +97,7 @@ export default function ReportForm({ onClose, onCreated }) {
   const [geoLoading, setGeoLoading] = useState(false) // detectando distrito
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [processingPhotos, setProcessingPhotos] = useState(false)
   const [nearby, setNearby] = useState([])
   const cameraRef = useRef(null)
   const galleryRef = useRef(null)
@@ -121,8 +161,15 @@ export default function ReportForm({ onClose, onCreated }) {
       return
     }
     setError('')
-    const dataUrls = await Promise.all(files.map(readFileAsDataUrl))
-    addPhotoDataUrls(dataUrls)
+    setProcessingPhotos(true)
+    try {
+      const dataUrls = await Promise.all(
+        files.map((f) => compressImage(f).catch(() => readFileAsDataUrl(f)))
+      )
+      addPhotoDataUrls(dataUrls)
+    } finally {
+      setProcessingPhotos(false)
+    }
   }
 
   function onPhotoChange(e) {
@@ -231,8 +278,12 @@ export default function ReportForm({ onClose, onCreated }) {
           {/* ① Foto: lo primero y lo más importante del reporte. */}
           <div className="form-section-title">1 · Foto del semáforo</div>
           <div className="field">
-            <div className="help" style={{ marginTop: 0, marginBottom: 8 }}>
-              Toma una foto o elige imágenes de tu dispositivo. Hasta {MAX_PHOTOS}.
+            <div
+              className="help"
+              style={{ marginTop: 0, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}
+            >
+              <span>Toma una foto o elige imágenes de tu dispositivo. Hasta {MAX_PHOTOS} fotos.</span>
+              <span className="tag" style={{ flex: '0 0 auto' }}>{photos.length}/{MAX_PHOTOS}</span>
             </div>
             {/* Dos inputs ocultos: uno abre la cámara (capture, con su propia
                 vista previa antes de aceptar), otro la galería. Un botón los
@@ -258,7 +309,7 @@ export default function ReportForm({ onClose, onCreated }) {
                 type="button"
                 className="btn btn-photo"
                 onClick={() => cameraRef.current?.click()}
-                disabled={photosFull}
+                disabled={photosFull || processingPhotos}
               >
                 <FiCamera /> Tomar foto
               </button>
@@ -266,11 +317,18 @@ export default function ReportForm({ onClose, onCreated }) {
                 type="button"
                 className="btn btn-photo"
                 onClick={() => galleryRef.current?.click()}
-                disabled={photosFull}
+                disabled={photosFull || processingPhotos}
               >
                 <FiImage /> Elegir de galería
               </button>
             </div>
+
+            {processingPhotos && <div className="help-inline" style={{ display: 'block', marginTop: 6 }}>Procesando foto(s)…</div>}
+            {photosFull && !processingPhotos && (
+              <div className="help-inline" style={{ display: 'block', marginTop: 6 }}>
+                Alcanzaste el máximo de {MAX_PHOTOS} fotos.
+              </div>
+            )}
 
             {photos.length > 0 && (
               <div className="photo-grid">
