@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { FiX, FiFlag, FiAlertTriangle, FiExternalLink } from 'react-icons/fi'
+import { FaWhatsapp } from 'react-icons/fa'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
 import { titleCase } from '../data/peru.js'
+import { buildWhatsappReportUrl } from '../data/whatsapp.js'
 import { useBackClose } from '../useBackClose.js'
 import StatusBadge from './StatusBadge.jsx'
 
@@ -108,9 +110,18 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           <p className="detail-meta"><b>Reportado:</b> {fmtDate(incident.createdAt)} ({age} días)</p>
           {incident.description && <p style={{ marginTop: 12 }}>{incident.description}</p>}
 
-          <div style={{ marginTop: 14 }}>
+          <div style={{ marginTop: 14, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             <a className="btn btn-sm" href={gmaps} target="_blank" rel="noreferrer">
               <FiExternalLink /> Abrir en Google Maps
+            </a>
+            <a
+              className="btn btn-sm btn-whatsapp"
+              href={buildWhatsappReportUrl(incident)}
+              target="_blank"
+              rel="noreferrer"
+              title="Abre WhatsApp con el reporte prellenado — revísalo y toca enviar"
+            >
+              <FaWhatsapp /> Enviar también a la autoridad por WhatsApp
             </a>
           </div>
 

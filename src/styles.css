@@ -127,6 +127,8 @@ button {
 }
 .btn-primary:hover { background: var(--accent-strong); border-color: var(--accent-strong); }
 .btn-danger { color: #fff; background: var(--danger); border-color: var(--danger); }
+.btn-whatsapp { color: #fff; background: #25d366; border-color: #25d366; }
+.btn-whatsapp:hover { background: #1ebe5b; border-color: #1ebe5b; }
 .btn-block { width: 100%; }
 .btn-sm { padding: 6px 10px; font-size: 13px; }
 .btn-lg { padding: 15px 18px; font-size: 17px; }
