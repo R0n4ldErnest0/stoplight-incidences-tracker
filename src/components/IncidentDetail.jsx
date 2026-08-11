@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { FiX, FiFlag, FiAlertTriangle, FiExternalLink } from 'react-icons/fi'
+import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2 } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
 import { titleCase } from '../data/peru.js'
 import { buildWhatsappReportUrl } from '../data/whatsapp.js'
+import { buildIncidentUrl } from '../shareLink.js'
 import { useBackClose } from '../useBackClose.js'
 import StatusBadge from './StatusBadge.jsx'
 
@@ -35,8 +36,35 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
 
   const [flagged, setFlagged] = useState(false)
   const [flagging, setFlagging] = useState(false)
+  const [copied, setCopied] = useState(false)
 
-  useBackClose(onClose) // el botón "atrás" del teléfono cierra este detalle
+  const shareUrl = buildIncidentUrl(incident.id)
+
+  // El botón "atrás" del teléfono cierra este detalle. Le pasamos el link
+  // compartible como URL de esa entrada del historial, así la barra de
+  // direcciones lo refleja mientras está abierto — por eso todo cierre (×,
+  // fondo) usa history.back() en vez de onClose directo: así el navegador
+  // revierte la URL solo, en vez de dejarla apuntando a este reporte.
+  useBackClose(onClose, shareUrl)
+  const close = () => window.history.back()
+
+  async function share() {
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: incident.title, url: shareUrl })
+      } catch {
+        // el usuario canceló el share sheet — no es un error
+      }
+      return
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      window.prompt('Copia el link del reporte:', shareUrl)
+    }
+  }
 
   async function setStatus(status) {
     const note = isAdmin ? 'Actualizado por la autoridad' : ''
@@ -70,11 +98,11 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
   }
 
   return (
-    <div className="overlay" onClick={onClose}>
+    <div className="overlay" onClick={close}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
           <h2>{incident.title}</h2>
-          <button className="icon-btn" onClick={onClose} aria-label="Cerrar"><FiX /></button>
+          <button className="icon-btn" onClick={close} aria-label="Cerrar"><FiX /></button>
         </div>
         <div className="drawer-body">
           {photos.length > 0 ? (
@@ -123,6 +151,9 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             >
               <FaWhatsapp /> Enviar también a la autoridad por WhatsApp
             </a>
+            <button type="button" className="btn btn-sm" onClick={share}>
+              <FiShare2 /> {copied ? '¡Link copiado!' : 'Compartir'}
+            </button>
           </div>
 
           <div className="report-abuse">

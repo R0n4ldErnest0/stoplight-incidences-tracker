@@ -11,6 +11,7 @@ import OnboardingModal, { ONBOARDING_SEEN_KEY } from './components/OnboardingMod
 import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
+import { getIncidentIdFromUrl } from './shareLink.js'
 
 const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
@@ -72,7 +73,8 @@ function DateRangeSelect({ compact, value, onChange, customStart, customEnd, onC
 export default function App() {
   const [incidents, setIncidents] = useState([])
   const [stats, setStats] = useState(EMPTY_STATS)
-  const [selectedId, setSelectedId] = useState(null)
+  // Si se entró por un link compartido (?id=...), abre ese reporte apenas cargue.
+  const [selectedId, setSelectedId] = useState(() => getIncidentIdFromUrl())
   const [showReport, setShowReport] = useState(false)
   const [showAuth, setShowAuth] = useState(false)
   const [showAbout, setShowAbout] = useState(false)
@@ -121,6 +123,20 @@ export default function App() {
     })
     return unsub
   }, [])
+
+  // Red de seguridad: si el detalle se cierra pero la URL todavía trae ?id=
+  // (pasa al entrar directo por un link compartido — ver shareLink.js), la
+  // limpia sin agregar una entrada al historial. En el cierre normal
+  // (click/atrás dentro de un reporte abierto desde la app) esto no hace
+  // nada porque history.back() ya la dejó limpia.
+  useEffect(() => {
+    if (selectedId) return
+    const url = new URL(window.location.href)
+    if (url.searchParams.has('id')) {
+      url.searchParams.delete('id')
+      window.history.replaceState(null, '', url)
+    }
+  }, [selectedId])
 
   // Filtro por fecha (antigüedad del reporte, o un rango a mano con 'custom').
   // Se aplica antes que el de estado y también alimenta el panel de transparencia.

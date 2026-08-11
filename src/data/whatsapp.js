@@ -6,6 +6,7 @@
 // desde su propio WhatsApp.
 import { FAULT_TYPES } from '../constants.js'
 import { titleCase } from './peru.js'
+import { buildIncidentUrl } from '../shareLink.js'
 
 export const AUTHORITY_WHATSAPP_NUMBER = '51982157840'
 
@@ -26,6 +27,7 @@ export function buildWhatsappReportUrl(incident) {
     `🗺️ Ubicación: ${gmaps}`,
     `⚠️ Falla: ${faultLabel(incident.faultType)}`,
     incident.description && `📝 ${incident.description}`,
+    `🔗 Ver el reporte: ${buildIncidentUrl(incident.id)}`,
   ].filter(Boolean)
   return `https://wa.me/${AUTHORITY_WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`
 }
