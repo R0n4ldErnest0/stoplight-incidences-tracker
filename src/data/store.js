@@ -25,8 +25,8 @@ export const createIncident = backend.createIncident
 export const updateStatus = backend.updateStatus
 export const flagIncident = backend.flagIncident
 export const restoreIncident = backend.restoreIncident
-export const deleteIncident = backend.deleteIncident
+export const removeIncident = backend.removeIncident
 export const getStats = backend.getStats
 
 // Helpers puros (sin backend) — se re-exportan para no romper imports existentes.
-export { ageDays, distanceMeters } from './helpers.js'
+export { ageDays, distanceMeters, computeStats } from './helpers.js'

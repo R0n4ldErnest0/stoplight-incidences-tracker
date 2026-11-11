@@ -1,4 +1,4 @@
-import { FiCamera, FiCalendar, FiRefreshCw, FiClock } from 'react-icons/fi'
+import { FiCamera, FiCalendar, FiRefreshCw, FiClock, FiFlag, FiEyeOff } from 'react-icons/fi'
 import { STATUSES, FAULT_TYPES } from '../constants.js'
 import { ageDays } from '../data/store.js'
 import StatusBadge from './StatusBadge.jsx'
@@ -53,6 +53,12 @@ export default function IncidentList({ incidents, onSelect }) {
                 <div className="card-tags">
                   <span className="tag">{faultLabel(inc.faultType)}</span>
                   <span className="tag">{inc.district}</span>
+                  {/* Moderación visible para todos: marcado (1 reporte) u oculto (2+). */}
+                  {inc.hidden ? (
+                    <span className="tag tag-flag"><FiEyeOff /> Oculto · en revisión</span>
+                  ) : inc.flags > 0 ? (
+                    <span className="tag tag-flag"><FiFlag /> Marcado · en revisión</span>
+                  ) : null}
                 </div>
                 {inc.description && <p className="card-desc">{inc.description}</p>}
                 <div className="card-dates">

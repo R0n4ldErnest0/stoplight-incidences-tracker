@@ -1,19 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff, FiFilter } from 'react-icons/fi'
+import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff, FiFilter, FiShield, FiClipboard } from 'react-icons/fi'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import DashboardView from './components/DashboardView.jsx'
+import ModerationView from './components/ModerationView.jsx'
+import ManageView from './components/ManageView.jsx'
 import ReportForm from './components/ReportForm.jsx'
 import IncidentDetail from './components/IncidentDetail.jsx'
 import AuthModal from './components/AuthModal.jsx'
 import AboutModal from './components/AboutModal.jsx'
 import OnboardingModal, { ONBOARDING_SEEN_KEY } from './components/OnboardingModal.jsx'
-import { listIncidents, getStats, DATA_SOURCE } from './data/store.js'
+import { listIncidents, computeStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 import { getIncidentIdFromUrl } from './shareLink.js'
-
-const EMPTY_STATS = { total: 0, byStatus: {}, avgDays: null }
 
 function fmtShortDate(iso) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' })
@@ -70,9 +70,23 @@ function DateRangeSelect({ compact, value, onChange, customStart, customEnd, onC
   )
 }
 
+// Casilla para ver también los reportes ocultos por la comunidad (2+ reportes
+// de abuso). Por defecto no se muestran, pero cualquiera puede verlos: la
+// moderación también es transparente. Solo aparece si hay alguno oculto.
+function HiddenToggle({ compact, checked, onChange, count }) {
+  if (!count) return null
+  return (
+    <label className={compact ? 'mf-hidden-toggle' : 'hidden-toggle'} title="Reportes marcados 2 o más veces por la comunidad, en revisión">
+      <input type="checkbox" checked={checked} onChange={onChange} />
+      Mostrar ocultos por la comunidad ({count})
+    </label>
+  )
+}
+
 export default function App() {
+  // Todo lo que entrega el backend: incluye los ocultos por la comunidad y, con
+  // sesión de revisor, también los retirados (para la vista Moderación).
   const [incidents, setIncidents] = useState([])
-  const [stats, setStats] = useState(EMPTY_STATS)
   // Si se entró por un link compartido (?id=...), abre ese reporte apenas cargue.
   const [selectedId, setSelectedId] = useState(() => getIncidentIdFromUrl())
   const [showReport, setShowReport] = useState(false)
@@ -89,7 +103,9 @@ export default function App() {
   // Resumen flotante (mobile, vista mapa): el usuario puede ocultarlo; al
   // ocultarlo se reemplaza por una píldora chiquita con el filtro activo.
   const [statsHidden, setStatsHidden] = useState(false)
-  const [view, setView] = useState('map') // 'map' | 'list' | 'dashboard'
+  const [showHidden, setShowHidden] = useState(false)
+  // 'map' | 'list' | 'dashboard' | solo revisores: 'moderation' | 'manage'
+  const [view, setView] = useState('map')
   const [loading, setLoading] = useState(true)
   const [dataError, setDataError] = useState('')
   const [authState, setAuthState] = useState({ user: null, isReviewer: false, loading: true })
@@ -101,9 +117,7 @@ export default function App() {
 
   async function refresh() {
     try {
-      const [list, s] = await Promise.all([listIncidents(), getStats()])
-      setIncidents(list)
-      setStats(s)
+      setIncidents(await listIncidents())
       setDataError('')
     } catch (err) {
       console.error(err)
@@ -142,23 +156,45 @@ export default function App() {
     }
   }, [selectedId])
 
+  // Si se cierra la sesión estando en una vista de revisor, vuelve al mapa.
+  useEffect(() => {
+    if (!authState.isReviewer && (view === 'moderation' || view === 'manage')) setView('map')
+  }, [authState.isReviewer, view])
+
+  // Lo que ve el público: nunca los retirados; los ocultos por la comunidad
+  // solo si se marcó la casilla.
+  const publicIncidents = useMemo(
+    () => incidents.filter((i) => !i.removedAt && (showHidden || !i.hidden)),
+    [incidents, showHidden]
+  )
+  const hiddenCount = useMemo(
+    () => incidents.filter((i) => !i.removedAt && i.hidden).length,
+    [incidents]
+  )
+  const pendingCount = useMemo(
+    () => incidents.filter((i) => !i.removedAt && (i.flags > 0 || i.hidden)).length,
+    [incidents]
+  )
+  // Conteos de la franja de resumen: sobre lo mismo que se ve en mapa/lista.
+  const stats = useMemo(() => computeStats(publicIncidents), [publicIncidents])
+
   // Filtro por fecha (antigüedad del reporte, o un rango a mano con 'custom').
   // Se aplica antes que el de estado y también alimenta el panel de transparencia.
   const dateFiltered = useMemo(() => {
     if (dateRange === 'custom') {
-      if (!customStart && !customEnd) return incidents
+      if (!customStart && !customEnd) return publicIncidents
       const startMs = customStart ? new Date(`${customStart}T00:00:00`).getTime() : -Infinity
       const endMs = customEnd ? new Date(`${customEnd}T23:59:59.999`).getTime() : Infinity
-      return incidents.filter((i) => {
+      return publicIncidents.filter((i) => {
         const t = new Date(i.createdAt).getTime()
         return t >= startMs && t <= endMs
       })
     }
     const days = DATE_RANGES.find((r) => r.key === dateRange)?.days
-    if (!days) return incidents
+    if (!days) return publicIncidents
     const cutoff = Date.now() - days * 86400000
-    return incidents.filter((i) => new Date(i.createdAt).getTime() >= cutoff)
-  }, [incidents, dateRange, customStart, customEnd])
+    return publicIncidents.filter((i) => new Date(i.createdAt).getTime() >= cutoff)
+  }, [publicIncidents, dateRange, customStart, customEnd])
 
   const visible = useMemo(() => {
     if (filter === 'all') return dateFiltered
@@ -208,6 +244,24 @@ export default function App() {
             <FiBarChart2 /> Transparencia
           </button>
         </div>
+        {/* Vistas solo para revisores (un solo rol por ahora: modera y gestiona). */}
+        {authState.isReviewer && (
+          <div className="viewtabs staff-tabs">
+            <button
+              className={view === 'moderation' ? 'viewtab active' : 'viewtab'}
+              onClick={() => setView('moderation')}
+            >
+              <FiShield /> Moderación
+              {pendingCount > 0 && <span className="tab-count">{pendingCount}</span>}
+            </button>
+            <button
+              className={view === 'manage' ? 'viewtab active' : 'viewtab'}
+              onClick={() => setView('manage')}
+            >
+              <FiClipboard /> Gestión
+            </button>
+          </div>
+        )}
         <button
           className="icon-btn about-trigger"
           onClick={() => setShowAbout(true)}
@@ -267,6 +321,11 @@ export default function App() {
             <div className="stat"><b>{stats.avgDays}</b> días prom. a resolver</div>
           )}
           <div className="stat-spacer" />
+          <HiddenToggle
+            checked={showHidden}
+            onChange={(e) => setShowHidden(e.target.checked)}
+            count={hiddenCount}
+          />
           <DateRangeSelect
             value={dateRange}
             onChange={(e) => setDateRange(e.target.value)}
@@ -305,6 +364,11 @@ export default function App() {
             onCustomStart={(e) => setCustomStart(e.target.value)}
             onCustomEnd={(e) => setCustomEnd(e.target.value)}
           />
+          <HiddenToggle
+            checked={showHidden}
+            onChange={(e) => setShowHidden(e.target.checked)}
+            count={hiddenCount}
+          />
         </div>
       )}
 
@@ -331,6 +395,10 @@ export default function App() {
           <MapView incidents={visible} onSelect={setSelectedId} />
         ) : view === 'list' ? (
           <IncidentList incidents={visible} onSelect={setSelectedId} />
+        ) : view === 'moderation' ? (
+          <ModerationView incidents={incidents} onSelect={setSelectedId} onChanged={refresh} />
+        ) : view === 'manage' ? (
+          <ManageView incidents={incidents} onSelect={setSelectedId} onChanged={refresh} />
         ) : (
           <DashboardView incidents={dateFiltered} onSelect={setSelectedId} />
         )}
@@ -399,6 +467,12 @@ export default function App() {
               customEnd={customEnd}
               onCustomStart={(e) => setCustomStart(e.target.value)}
               onCustomEnd={(e) => setCustomEnd(e.target.value)}
+            />
+            <HiddenToggle
+              compact
+              checked={showHidden}
+              onChange={(e) => setShowHidden(e.target.checked)}
+              count={hiddenCount}
             />
           </div>
         ))}

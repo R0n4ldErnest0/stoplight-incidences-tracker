@@ -28,7 +28,9 @@ create table if not exists public.incidents (
   photo_url   text,                       -- foto principal (compatibilidad)
   photos      text[] not null default '{}', -- todas las fotos del reporte (URLs públicas)
   flags       int not null default 0,      -- cuántas personas reportaron el contenido
-  hidden      boolean not null default false, -- se oculta del público tras varios reportes
+  hidden      boolean not null default false, -- fuera de la vista por defecto tras 2 reportes
+  removed_at  timestamptz,                -- retirado por moderación (borrado lógico)
+  removed_reason text default '',         -- motivo del retiro (ver REMOVAL_REASONS)
   created_at  timestamptz not null default now()
 );
 
@@ -43,6 +45,10 @@ alter table public.incidents
   add column if not exists departamento text default '';
 alter table public.incidents
   add column if not exists provincia text default '';
+alter table public.incidents
+  add column if not exists removed_at timestamptz;
+alter table public.incidents
+  add column if not exists removed_reason text default '';
 
 create index if not exists incidents_status_idx on public.incidents (status);
 create index if not exists incidents_geom_idx on public.incidents using gist (geom);
@@ -77,21 +83,23 @@ create trigger trg_initial_status
 
 -- 4b) Reportar contenido de abuso (foto/relato inapropiado o falso) -----------
 --     `security definer` para que el público pueda sumar un reporte SIN tener
---     permiso general de UPDATE sobre incidents. Al llegar al umbral, el
---     contenido se oculta del mapa público hasta que un revisor lo revise.
+--     permiso general de UPDATE sobre incidents. Al llegar al umbral (2), el
+--     reporte sale de la vista por defecto (sigue visible con la casilla
+--     "Mostrar reportes ocultos") hasta que un revisor lo revise.
 create or replace function public.flag_incident(target uuid)
 returns int
 language plpgsql
 security definer
 set search_path = public as $$
 declare
-  threshold constant int := 5;
+  threshold constant int := 2;
   new_count int;
 begin
   update public.incidents
      set flags  = flags + 1,
          hidden = (flags + 1) >= threshold
    where id = target
+     and removed_at is null   -- un reporte ya retirado no se puede volver a marcar
    returning flags into new_count;
   return new_count;  -- null si el id no existe
 end;
@@ -103,12 +111,14 @@ grant execute on function public.flag_incident(uuid) to anon, authenticated;
 alter table public.incidents enable row level security;
 alter table public.status_changes enable row level security;
 
--- Lectura pública: cualquiera ve el mapa (transparencia), EXCEPTO el contenido
--- ocultado por reportes de abuso. Los revisores sí ven todo (para moderar).
+-- Lectura pública: cualquiera ve el mapa (transparencia), incluso los reportes
+-- ocultos por la comunidad (la app los muestra solo si la persona lo pide).
+-- Lo único que el público NO ve son los reportes retirados por moderación.
+-- Los revisores sí ven todo (para moderar y poder restaurar).
 drop policy if exists "lectura pública incidents" on public.incidents;
 create policy "lectura pública incidents" on public.incidents
   for select using (
-    not hidden
+    removed_at is null
     or (auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer'
   );
 
@@ -144,11 +154,10 @@ create policy "autoridad escribe historial" on public.status_changes
   for insert to authenticated
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
 
--- Moderación: un revisor puede eliminar un reporte marcado por la comunidad
--- (spam/abuso confirmado). Sin esta política, restoreIncident/deleteIncident
--- en supabaseStore.js fallarían: sin policy de delete, RLS deniega por
--- defecto. status_changes necesita su propia policy de delete porque el
--- `on delete cascade` de la FK también pasa por RLS de esa tabla.
+-- Borrado definitivo: la app NO lo usa (retirar es un borrado lógico con
+-- removed_at, para no perder el registro). Estas políticas quedan solo para
+-- limpiezas manuales de un revisor. status_changes necesita su propia policy
+-- porque el `on delete cascade` de la FK también pasa por RLS de esa tabla.
 drop policy if exists "autoridad elimina" on public.incidents;
 create policy "autoridad elimina" on public.incidents
   for delete to authenticated
@@ -180,6 +189,16 @@ on conflict (id) do nothing;
 drop policy if exists "fotos lectura pública" on storage.objects;
 create policy "fotos lectura pública" on storage.objects
   for select using (bucket_id = 'incident-photos');
+
+-- Al retirar un reporte se borran sus fotos (contenido abusivo no debe seguir
+-- publicado, y es lo que más espacio ocupa). Solo revisores.
+drop policy if exists "fotos borrado revisor" on storage.objects;
+create policy "fotos borrado revisor" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'incident-photos'
+    and (auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer'
+  );
 
 -- Subida de fotos (FASE 1: cualquiera; endurecer junto con la autenticación).
 drop policy if exists "fotos subida" on storage.objects;

@@ -34,6 +34,8 @@ function mapRow(row) {
     photo: photos[0] || null, // alias de la principal (miniaturas de lista/mapa)
     flags: row.flags || 0,
     hidden: row.hidden || false,
+    removedAt: row.removed_at || null,
+    removedReason: row.removed_reason || '',
     createdAt: row.created_at,
     history: history.length
       ? history
@@ -103,6 +105,8 @@ export async function findNearby({ lat, lng }, radius = 60) {
     .from('incidents')
     .select(SELECT)
     .in('status', ['reported', 'acknowledged', 'in_progress'])
+    .is('removed_at', null)
+    .eq('hidden', false)
   if (error) throw error
   return data
     .map(mapRow)
@@ -170,29 +174,44 @@ function storagePathFromUrl(url) {
   return idx === -1 ? null : url.slice(idx + marker.length)
 }
 
-// Un revisor confirma que un reporte marcado por la comunidad NO es spam:
-// limpia los reportes de abuso y lo vuelve a mostrar en el mapa público.
+// Un revisor decide que un reporte NO es abuso (o deshace un retiro): limpia
+// los reportes de la comunidad y lo vuelve a mostrar en el mapa público.
+// Si había sido retirado, sus fotos ya no vuelven (se borraron al retirarlo).
 export async function restoreIncident(id) {
-  const { error } = await supabase.from('incidents').update({ flags: 0, hidden: false }).eq('id', id)
+  const { error } = await supabase
+    .from('incidents')
+    .update({ flags: 0, hidden: false, removed_at: null, removed_reason: '' })
+    .eq('id', id)
   if (error) throw error
   return getIncident(id)
 }
 
-// Un revisor confirma que un reporte marcado SÍ es spam/abuso: lo elimina de
-// forma permanente. Borra también sus fotos de Storage (best-effort — si eso
-// falla no bloquea el borrado del reporte, que es lo importante para moderar).
-export async function deleteIncident(id) {
+// Un revisor retira un reporte (spam/abuso): borrado LÓGICO — la fila se
+// conserva (auditable y restaurable) pero el público ya no la recibe (RLS en
+// schema.sql). Las fotos sí se borran de Storage: el contenido abusivo no debe
+// seguir publicado y son lo que más espacio ocupa. Best-effort: si el borrado
+// de archivos falla, el retiro igual se aplica (es lo importante para moderar).
+export async function removeIncident(id, reason = 'otro') {
   const incident = await getIncident(id)
   const paths = (incident?.photos || []).map(storagePathFromUrl).filter(Boolean)
   if (paths.length) {
     const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove(paths)
     if (storageError) console.error('No se pudieron borrar las fotos de Storage:', storageError)
   }
-  const { error } = await supabase.from('incidents').delete().eq('id', id)
+  const { error } = await supabase
+    .from('incidents')
+    .update({
+      removed_at: new Date().toISOString(),
+      removed_reason: reason,
+      photos: [],
+      photo_url: null,
+    })
+    .eq('id', id)
   if (error) throw error
+  return getIncident(id)
 }
 
 export async function getStats() {
   const incidents = await listIncidents()
-  return computeStats(incidents)
+  return computeStats(incidents.filter((i) => !i.hidden && !i.removedAt))
 }

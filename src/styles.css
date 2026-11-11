@@ -999,3 +999,108 @@ button svg,
   /* Dos columnas para las fotos en pantallas estrechas. */
   .photo-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* ---------- Moderación (marcados/ocultos/retirados) ---------- */
+.tag-flag {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #92400e;
+  font-weight: 600;
+}
+.tag svg { vertical-align: -2px; }
+.mod-notice { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 10px; }
+.mod-notice svg { flex: 0 0 auto; margin-top: 3px; }
+.mod-box {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  background: var(--panel-2);
+}
+.mod-confirm { display: grid; gap: 8px; }
+.mod-confirm-label { display: grid; gap: 4px; font-size: 13px; font-weight: 600; }
+.mod-confirm-label select { padding: 6px 8px; border-radius: 8px; border: 1px solid var(--border); font-size: 14px; }
+.mod-error { color: var(--danger); font-size: 13px; margin-top: 6px; }
+
+/* Casilla "Mostrar ocultos por la comunidad" */
+.hidden-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+.mf-hidden-toggle {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 5px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- Vistas de revisor (Moderación / Gestión) ---------- */
+.staff-tabs .viewtab { display: inline-flex; align-items: center; gap: 6px; justify-content: center; }
+.tab-count {
+  background: var(--danger);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 3px 6px;
+}
+.staff-wrap { max-width: 1100px; margin: 0 auto; }
+.staff-section { margin-bottom: 24px; }
+.staff-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  margin: 0 0 4px;
+}
+.staff-empty { position: static; padding: 16px 0; }
+.staff-card {
+  display: grid;
+  gap: 8px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-top: 10px;
+}
+.staff-card-main {
+  display: flex;
+  gap: 10px;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+.staff-thumb {
+  flex: 0 0 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel-2);
+  display: grid;
+  place-items: center;
+  font-size: 24px;
+}
+.staff-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.staff-card-body { min-width: 0; display: grid; gap: 4px; }
+.staff-meta { font-size: 13px; color: var(--muted); }
+.manage-cols {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+.manage-col .staff-card .btn { justify-self: start; display: inline-flex; align-items: center; gap: 6px; }
+@media (max-width: 800px) {
+  .manage-cols { grid-template-columns: minmax(0, 1fr); }
+}

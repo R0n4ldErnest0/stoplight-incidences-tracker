@@ -39,6 +39,19 @@ export const STATUSES = {
 
 export const STATUS_ORDER = ['reported', 'acknowledged', 'in_progress', 'resolved']
 
+// Moderación: con cuántos reportes de la comunidad un reporte sale de la vista
+// por defecto (debe coincidir con `threshold` en flag_incident, schema.sql).
+export const HIDE_THRESHOLD = 2
+
+// Motivos para retirar un reporte (borrado lógico, ver removed_at en schema.sql).
+// Los duplicados NO se retiran: se marcan con el estado 'duplicate'.
+export const REMOVAL_REASONS = [
+  { key: 'spam', label: 'Spam o falso (no es un semáforo malogrado)' },
+  { key: 'inapropiado', label: 'Foto o texto inapropiado' },
+  { key: 'datos_personales', label: 'Expone datos personales' },
+  { key: 'otro', label: 'Otro motivo' },
+]
+
 // Tipos de falla más comunes en semáforos.
 export const FAULT_TYPES = [
   { key: 'apagado', label: 'Apagado o Sin luz' },

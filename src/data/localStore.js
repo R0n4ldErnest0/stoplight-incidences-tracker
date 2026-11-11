@@ -3,6 +3,7 @@
 
 import { SEED_INCIDENTS } from './seed.js'
 import { distanceMeters, computeStats } from './helpers.js'
+import { HIDE_THRESHOLD } from '../constants.js'
 
 const STORAGE_KEY = 'semaforo-alerta:incidents:v1'
 
@@ -28,9 +29,12 @@ function genId() {
   return 'inc-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7)
 }
 
+// Incluye los ocultos por la comunidad (la app decide si mostrarlos); solo
+// excluye los retirados por moderación. (En Supabase un revisor sí los recibe;
+// acá no hace falta: el modo demo nunca tiene sesión de revisor.)
 export async function listIncidents() {
   return load()
-    .filter((i) => !i.hidden) // el contenido muy reportado se oculta del público
+    .filter((i) => !i.removedAt)
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
 }
 
@@ -42,6 +46,7 @@ export async function findNearby({ lat, lng }, radius = 60) {
   return load().filter(
     (i) =>
       !i.hidden &&
+      !i.removedAt &&
       i.status !== 'resolved' &&
       i.status !== 'duplicate' &&
       distanceMeters({ lat, lng }, { lat: i.lat, lng: i.lng }) <= radius
@@ -72,6 +77,8 @@ export async function createIncident(input) {
     photo: photos[0] || null, // alias de la principal (miniaturas de lista/mapa)
     flags: 0,
     hidden: false,
+    removedAt: null,
+    removedReason: '',
     createdAt: now,
     history: [{ status: 'reported', at: now, note: 'Reporte ciudadano' }],
   }
@@ -94,35 +101,48 @@ export async function updateStatus(id, status, note = '') {
   return incidents[idx]
 }
 
-// Reporta un incidente como abuso. Al 5º reporte se oculta del público, igual
-// que en el backend Supabase (ver flag_incident en schema.sql).
+// Reporta un incidente como abuso. Al llegar a HIDE_THRESHOLD sale de la vista
+// por defecto, igual que en el backend Supabase (ver flag_incident en schema.sql).
 export async function flagIncident(id) {
   const incidents = load()
   const idx = incidents.findIndex((i) => i.id === id)
-  if (idx === -1) return null
+  if (idx === -1 || incidents[idx].removedAt) return null
   const flags = (incidents[idx].flags || 0) + 1
-  incidents[idx] = { ...incidents[idx], flags, hidden: flags >= 5 }
+  incidents[idx] = { ...incidents[idx], flags, hidden: flags >= HIDE_THRESHOLD }
   save(incidents)
   return { id, flags }
 }
 
-// Un revisor confirma que un reporte marcado por la comunidad NO es spam:
-// limpia los reportes de abuso y lo vuelve a mostrar en el mapa público.
+// Un revisor decide que un reporte NO es abuso (o deshace un retiro): limpia
+// los reportes de la comunidad y lo vuelve a mostrar en el mapa público.
+// Si había sido retirado, sus fotos ya no vuelven (se borraron al retirarlo).
 export async function restoreIncident(id) {
   const incidents = load()
   const idx = incidents.findIndex((i) => i.id === id)
   if (idx === -1) return null
-  incidents[idx] = { ...incidents[idx], flags: 0, hidden: false }
+  incidents[idx] = { ...incidents[idx], flags: 0, hidden: false, removedAt: null, removedReason: '' }
   save(incidents)
   return incidents[idx]
 }
 
-// Un revisor confirma que un reporte marcado SÍ es spam/abuso: lo elimina
-// de forma permanente (incluye su historial, referenciado por id).
-export async function deleteIncident(id) {
-  save(load().filter((i) => i.id !== id))
+// Un revisor retira un reporte (spam/abuso): borrado LÓGICO — el registro se
+// conserva (auditable y restaurable), pero sale de todas las vistas públicas.
+// Las fotos sí se descartan: el contenido abusivo no debe seguir publicado.
+export async function removeIncident(id, reason = 'otro') {
+  const incidents = load()
+  const idx = incidents.findIndex((i) => i.id === id)
+  if (idx === -1) return null
+  incidents[idx] = {
+    ...incidents[idx],
+    removedAt: new Date().toISOString(),
+    removedReason: reason,
+    photos: [],
+    photo: null,
+  }
+  save(incidents)
+  return incidents[idx]
 }
 
 export async function getStats() {
-  return computeStats(load().filter((i) => !i.hidden))
+  return computeStats(load().filter((i) => !i.hidden && !i.removedAt))
 }

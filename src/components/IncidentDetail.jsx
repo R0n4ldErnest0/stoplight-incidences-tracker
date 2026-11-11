@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiCheckCircle, FiTrash2 } from 'react-icons/fi'
+import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiEyeOff, FiTrash2 } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
-import { updateStatus, flagIncident, restoreIncident, deleteIncident, ageDays } from '../data/store.js'
+import { updateStatus, flagIncident, ageDays } from '../data/store.js'
 import { titleCase } from '../data/peru.js'
 import { buildWhatsappReportUrl, shareablePhotoUrls, AUTHORITIES } from '../data/whatsapp.js'
 import { buildIncidentUrl } from '../shareLink.js'
 import { useBackClose } from '../useBackClose.js'
 import StatusBadge from './StatusBadge.jsx'
+import ModerationActions, { removalReasonLabel } from './ModerationActions.jsx'
 
 function fmtDate(iso) {
   return new Date(iso).toLocaleString('es-PE', {
@@ -57,7 +58,6 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
   const [justFlagged, setJustFlagged] = useState(false)
   const [flagging, setFlagging] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [moderating, setModerating] = useState(false)
 
   const shareUrl = buildIncidentUrl(incident.id)
 
@@ -123,38 +123,6 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
     }
   }
 
-  // Resuelve un reporte marcado por la comunidad: un revisor decide si es
-  // spam/abuso real (lo elimina) o no (lo restaura, limpiando los reportes).
-  async function restore() {
-    if (moderating) return
-    setModerating(true)
-    try {
-      const updated = await restoreIncident(incident.id)
-      onChanged(updated)
-    } catch (err) {
-      console.error(err)
-      alert('No se pudo restaurar el reporte: ' + (err.message || 'error'))
-    } finally {
-      setModerating(false)
-    }
-  }
-
-  async function remove() {
-    if (moderating) return
-    const ok = window.confirm('¿Eliminar este reporte de forma permanente? Esta acción no se puede deshacer.')
-    if (!ok) return
-    setModerating(true)
-    try {
-      await deleteIncident(incident.id)
-      onChanged()
-      close()
-    } catch (err) {
-      console.error(err)
-      alert('No se pudo eliminar el reporte: ' + (err.message || 'error'))
-      setModerating(false)
-    }
-  }
-
   return (
     <div className="overlay" onClick={close}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
@@ -184,18 +152,29 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             )}
           </div>
 
-          {isAdmin && incident.flags > 0 && (
-            <div className="warn" style={{ marginBottom: 10 }}>
-              <FiFlag /> {incident.flags} reporte(s) de la comunidad
-              {incident.hidden ? ' · OCULTO del público hasta revisión' : ''}
-              <div className="admin-actions" style={{ marginTop: 10 }}>
-                <button type="button" className="btn btn-sm" onClick={restore} disabled={moderating}>
-                  <FiCheckCircle /> No es spam — restaurar
-                </button>
-                <button type="button" className="btn btn-sm btn-danger" onClick={remove} disabled={moderating}>
-                  <FiTrash2 /> Eliminar reporte
-                </button>
-              </div>
+          {/* Aviso público: cualquiera ve que el reporte fue marcado y está en
+              revisión (transparencia también en la moderación). */}
+          {incident.removedAt ? (
+            <div className="warn mod-notice">
+              <FiTrash2 /> Retirado por moderación el {fmtDate(incident.removedAt)} ·{' '}
+              {removalReasonLabel(incident.removedReason)}. No es visible para el público.
+            </div>
+          ) : incident.hidden ? (
+            <div className="warn mod-notice">
+              <FiEyeOff /> Oculto del mapa por reportes de la comunidad · en revisión
+              {isAdmin && ` (${incident.flags} reporte(s))`}
+            </div>
+          ) : incident.flags > 0 ? (
+            <div className="warn mod-notice">
+              <FiFlag /> Marcado por la comunidad · en revisión
+              {isAdmin && ` (${incident.flags} reporte(s))`}
+            </div>
+          ) : null}
+
+          {isAdmin && (
+            <div className="mod-box">
+              <div className="section-title" style={{ marginTop: 0 }}>Moderación</div>
+              <ModerationActions incident={incident} onChanged={onChanged} />
             </div>
           )}
 
@@ -232,7 +211,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             </div>
           )}
 
-          <div className="report-abuse">
+          {!incident.removedAt && <div className="report-abuse">
             {flagged ? (
               <span className="report-abuse-done">
                 {justFlagged
@@ -249,7 +228,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
                 <FiFlag /> {flagging ? 'Enviando…' : 'Reportar contenido inapropiado'}
               </button>
             )}
-          </div>
+          </div>}
 
           <div className="section-title">Historial</div>
           <ul className="timeline">

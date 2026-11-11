@@ -1,5 +1,13 @@
 import { test, expect } from '@playwright/test'
 
+// El popup de bienvenida (OnboardingModal) tapa la app en la primera visita;
+// lo marcamos como visto para que no intercepte los clics de los tests.
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem('semaforo-alerta:onboarding-seen:v1', '1')
+  })
+})
+
 test('loads in demo mode with the seeded data', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/SemáforoAlerta/)
@@ -29,7 +37,10 @@ test('opens the "Acerca de" modal from the topbar', async ({ page }) => {
 
 test('date-range filter is available', async ({ page }) => {
   await page.goto('/')
-  const dateSelect = page.locator('.date-select')
+  // En mapa + mobile la franja de escritorio se oculta (resumen flotante);
+  // la barra de Lista tiene el selector de fecha en cualquier ancho.
+  await page.getByRole('button', { name: /Lista/ }).click()
+  const dateSelect = page.locator('label[title="Filtrar por antigüedad del reporte"] select')
   await expect(dateSelect).toBeVisible()
   await dateSelect.selectOption('7d')
   await expect(dateSelect).toHaveValue('7d')
@@ -72,4 +83,39 @@ test('can flag an incident as abuse from its detail', async ({ page }) => {
   await expect(flagBtn).toBeVisible() // el detalle abrió
   await flagBtn.click()
   await expect(page.getByText(/Gracias\. Un revisor/)).toBeVisible()
+})
+
+test('a flagged report shows a badge, remembers the flag, and hides at 2 flags', async ({ page }) => {
+  await page.goto('/')
+  page.on('dialog', (d) => d.accept())
+  await page.getByRole('button', { name: /Lista/ }).click()
+  const firstCard = page.locator('.card').first()
+  const title = await firstCard.locator('.card-title').textContent()
+  await firstCard.click()
+  await page.getByRole('button', { name: /Reportar contenido/ }).click()
+  await expect(page.getByText(/Gracias\. Un revisor/)).toBeVisible()
+
+  // Cerrar y reabrir: ya no ofrece el botón, muestra el aviso.
+  await page.getByRole('button', { name: 'Cerrar' }).click()
+  const card = page.locator('.card', { hasText: title })
+  await expect(card.getByText('Marcado · en revisión')).toBeVisible()
+  await card.click()
+  await expect(page.getByText('Ya reportaste este contenido · en revisión')).toBeVisible()
+  await expect(page.getByRole('button', { name: /Reportar contenido/ })).toHaveCount(0)
+  await page.getByRole('button', { name: 'Cerrar' }).click()
+
+  // Simula un 2º reporte (desde otro dispositivo) directo en el almacenamiento demo.
+  await page.evaluate((t) => {
+    const key = 'semaforo-alerta:incidents:v1'
+    const list = JSON.parse(localStorage.getItem(key))
+    const inc = list.find((i) => i.title === t)
+    inc.flags = 2
+    inc.hidden = true
+    localStorage.setItem(key, JSON.stringify(list))
+  }, title)
+  await page.reload()
+  await page.getByRole('button', { name: /Lista/ }).click()
+  await expect(page.locator('.card', { hasText: title })).toHaveCount(0)
+  await page.getByLabel(/Mostrar ocultos por la comunidad/).check()
+  await expect(page.locator('.card', { hasText: title }).getByText('Oculto · en revisión')).toBeVisible()
 })
