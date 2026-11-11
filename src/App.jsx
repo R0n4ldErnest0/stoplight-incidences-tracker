@@ -477,9 +477,13 @@ export default function App() {
           </div>
         ))}
 
-        <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
-          <FiPlus /> Reportar semáforo
-        </button>
+        {/* En las vistas de revisor el botón flotante tapaba las acciones de
+            la última tarjeta, y ahí no se usa para reportar. */}
+        {view !== 'moderation' && view !== 'manage' && (
+          <button className="btn btn-primary fab" onClick={() => setShowReport(true)}>
+            <FiPlus /> Reportar semáforo
+          </button>
+        )}
 
         {showReport && (
           <ReportForm

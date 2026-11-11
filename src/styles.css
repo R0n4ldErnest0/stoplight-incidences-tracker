@@ -1051,7 +1051,7 @@ button svg,
   line-height: 1;
   padding: 3px 6px;
 }
-.staff-wrap { max-width: 1100px; margin: 0 auto; }
+.staff-wrap { padding-bottom: 32px; }
 .staff-section { margin-bottom: 24px; }
 .staff-title {
   display: flex;
