@@ -106,6 +106,23 @@ export async function flagIncident(id) {
   return { id, flags }
 }
 
+// Un revisor confirma que un reporte marcado por la comunidad NO es spam:
+// limpia los reportes de abuso y lo vuelve a mostrar en el mapa público.
+export async function restoreIncident(id) {
+  const incidents = load()
+  const idx = incidents.findIndex((i) => i.id === id)
+  if (idx === -1) return null
+  incidents[idx] = { ...incidents[idx], flags: 0, hidden: false }
+  save(incidents)
+  return incidents[idx]
+}
+
+// Un revisor confirma que un reporte marcado SÍ es spam/abuso: lo elimina
+// de forma permanente (incluye su historial, referenciado por id).
+export async function deleteIncident(id) {
+  save(load().filter((i) => i.id !== id))
+}
+
 export async function getStats() {
   return computeStats(load().filter((i) => !i.hidden))
 }

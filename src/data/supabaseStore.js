@@ -160,6 +160,38 @@ export async function flagIncident(id) {
   return { id, flags: data ?? 0 }
 }
 
+// Extrae la ruta dentro del bucket a partir de una URL pública de Storage
+// (https://.../storage/v1/object/public/incident-photos/<ruta>), para poder
+// borrar el archivo. null si la URL no viene de este bucket (p. ej. filas
+// muy antiguas con otro origen).
+function storagePathFromUrl(url) {
+  const marker = `/storage/v1/object/public/${PHOTO_BUCKET}/`
+  const idx = url.indexOf(marker)
+  return idx === -1 ? null : url.slice(idx + marker.length)
+}
+
+// Un revisor confirma que un reporte marcado por la comunidad NO es spam:
+// limpia los reportes de abuso y lo vuelve a mostrar en el mapa público.
+export async function restoreIncident(id) {
+  const { error } = await supabase.from('incidents').update({ flags: 0, hidden: false }).eq('id', id)
+  if (error) throw error
+  return getIncident(id)
+}
+
+// Un revisor confirma que un reporte marcado SÍ es spam/abuso: lo elimina de
+// forma permanente. Borra también sus fotos de Storage (best-effort — si eso
+// falla no bloquea el borrado del reporte, que es lo importante para moderar).
+export async function deleteIncident(id) {
+  const incident = await getIncident(id)
+  const paths = (incident?.photos || []).map(storagePathFromUrl).filter(Boolean)
+  if (paths.length) {
+    const { error: storageError } = await supabase.storage.from(PHOTO_BUCKET).remove(paths)
+    if (storageError) console.error('No se pudieron borrar las fotos de Storage:', storageError)
+  }
+  const { error } = await supabase.from('incidents').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function getStats() {
   const incidents = await listIncidents()
   return computeStats(incidents)

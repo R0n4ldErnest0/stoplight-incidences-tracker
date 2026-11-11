@@ -144,6 +144,21 @@ create policy "autoridad escribe historial" on public.status_changes
   for insert to authenticated
   with check ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
 
+-- Moderación: un revisor puede eliminar un reporte marcado por la comunidad
+-- (spam/abuso confirmado). Sin esta política, restoreIncident/deleteIncident
+-- en supabaseStore.js fallarían: sin policy de delete, RLS deniega por
+-- defecto. status_changes necesita su propia policy de delete porque el
+-- `on delete cascade` de la FK también pasa por RLS de esa tabla.
+drop policy if exists "autoridad elimina" on public.incidents;
+create policy "autoridad elimina" on public.incidents
+  for delete to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
+
+drop policy if exists "autoridad elimina historial" on public.status_changes;
+create policy "autoridad elimina historial" on public.status_changes
+  for delete to authenticated
+  using ((auth.jwt() -> 'app_metadata' ->> 'role') = 'reviewer');
+
 -- FASE 1 (ROLLBACK, ⚠ INSEGURO): permite que cualquiera actualice estados, sin
 -- login. Útil sólo para probar el flujo al inicio. Para volver a ella, borra las
 -- políticas "autoridad ..." de arriba y descomenta esto:

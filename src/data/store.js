@@ -24,6 +24,8 @@ export const findNearby = backend.findNearby
 export const createIncident = backend.createIncident
 export const updateStatus = backend.updateStatus
 export const flagIncident = backend.flagIncident
+export const restoreIncident = backend.restoreIncident
+export const deleteIncident = backend.deleteIncident
 export const getStats = backend.getStats
 
 // Helpers puros (sin backend) — se re-exportan para no romper imports existentes.
