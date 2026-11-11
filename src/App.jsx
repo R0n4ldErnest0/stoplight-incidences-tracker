@@ -118,8 +118,12 @@ export default function App() {
       setAuthState(getAuthState())
       refresh()
     })
+    // Al iniciar/cerrar sesión, recarga la lista: con sesión de revisor la BD
+    // devuelve también los reportes ocultos y los conteos de reportes al día.
+    // (Sin esto, el revisor veía la lista cargada como anónimo hasta recargar.)
     const unsub = onAuthChange((state) => {
       setAuthState(state)
+      refresh()
     })
     return unsub
   }, [])

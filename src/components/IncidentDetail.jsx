@@ -19,6 +19,24 @@ function faultLabel(key) {
   return FAULT_TYPES.find((f) => f.key === key)?.label || 'Otro'
 }
 
+// Recuerda en este dispositivo qué reportes ya marcó la persona, para no
+// volver a ofrecerle el botón al reabrirlos. Es solo una ayuda de UI: no
+// impide marcar de nuevo desde otro navegador (eso requeriría control en la BD).
+const FLAGGED_KEY = 'semaforo-alerta:flagged:v1'
+
+function loadFlaggedIds() {
+  try {
+    return JSON.parse(localStorage.getItem(FLAGGED_KEY)) || []
+  } catch {
+    return []
+  }
+}
+
+function rememberFlagged(id) {
+  const ids = loadFlaggedIds()
+  if (!ids.includes(id)) localStorage.setItem(FLAGGED_KEY, JSON.stringify([...ids, id]))
+}
+
 export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }) {
   const age = ageDays(incident)
   const gmaps = `https://www.google.com/maps/search/?api=1&query=${incident.lat},${incident.lng}`
@@ -34,7 +52,9 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
       ? [incident.photo]
       : []
 
-  const [flagged, setFlagged] = useState(false)
+  const [flagged, setFlagged] = useState(() => loadFlaggedIds().includes(incident.id))
+  // true solo justo después de marcar (para el "Gracias"); al reabrir, otro texto.
+  const [justFlagged, setJustFlagged] = useState(false)
   const [flagging, setFlagging] = useState(false)
   const [copied, setCopied] = useState(false)
   const [moderating, setModerating] = useState(false)
@@ -89,7 +109,12 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
     setFlagging(true)
     try {
       await flagIncident(incident.id)
+      rememberFlagged(incident.id)
       setFlagged(true)
+      setJustFlagged(true)
+      // Recarga la lista para que el conteo de reportes quede al día (si no,
+      // un revisor en esta misma pestaña seguiría viendo el conteo viejo).
+      onChanged()
     } catch (err) {
       console.error(err)
       alert('No se pudo enviar el reporte: ' + (err.message || 'error'))
@@ -209,7 +234,11 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
 
           <div className="report-abuse">
             {flagged ? (
-              <span className="report-abuse-done">✓ Gracias. Un revisor lo verificará.</span>
+              <span className="report-abuse-done">
+                {justFlagged
+                  ? '✓ Gracias. Un revisor lo verificará.'
+                  : '✓ Ya reportaste este contenido · en revisión'}
+              </span>
             ) : (
               <button
                 type="button"
