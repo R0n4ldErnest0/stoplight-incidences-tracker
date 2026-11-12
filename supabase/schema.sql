@@ -134,7 +134,7 @@ alter table public.incidents add constraint incidents_in_peru
 
 alter table public.incidents drop constraint if exists incidents_max_photos;
 alter table public.incidents add constraint incidents_max_photos
-  check (cardinality(photos) <= 4) not valid;
+  check (cardinality(photos) <= 3) not valid;
 
 --     Las fotos deben ser archivos de NUESTRO bucket que existan ---------------
 --    (evita reportes con enlaces a imágenes de cualquier sitio). Si usas otro

@@ -8,7 +8,11 @@ import { reverseGeocodeUbigeo } from '../data/geo.js'
 import { FiCamera, FiImage, FiMapPin, FiX, FiChevronDown } from 'react-icons/fi'
 import { useBackClose } from '../useBackClose.js'
 
-const MAX_PHOTOS = 4
+const MAX_PHOTOS = 3 // igual que la restricción incidents_max_photos (schema.sql)
+// Si una foto no se puede comprimir, solo se sube tal cual si el bucket la acepta
+// (mismos tipos y tamaño que en schema.sql); si no, se avisa en vez de fallar al publicar.
+const UPLOADABLE_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 // Comprimimos en el navegador antes de guardar: las fotos de cámara sin
 // tocar pesan varios MB cada una y eran la causa de que publicar tardara.
 // 1600px de lado más largo + calidad 0.8 en JPEG baja el peso ~10-20x sin
@@ -163,10 +167,26 @@ export default function ReportForm({ onClose, onCreated }) {
     setError('')
     setProcessingPhotos(true)
     try {
-      const dataUrls = await Promise.all(
-        files.map((f) => compressImage(f).catch(() => readFileAsDataUrl(f)))
+      // Lo normal: se comprime a JPEG (~0,2–0,4 MB), sea cual sea el formato de
+      // origen que el navegador pueda leer (incluido HEIC en iPhone/Safari).
+      const results = await Promise.all(
+        files.map((f) =>
+          compressImage(f).catch(() =>
+            UPLOADABLE_TYPES.includes(f.type) && f.size <= MAX_UPLOAD_BYTES
+              ? readFileAsDataUrl(f)
+              : null
+          )
+        )
       )
-      addPhotoDataUrls(dataUrls)
+      const ok = results.filter(Boolean)
+      if (ok.length < results.length) {
+        setError(
+          'Una o más fotos no se pudieron usar: el formato no es compatible con este ' +
+            'navegador (por ejemplo, HEIC de iPhone fuera de Safari) o pesan demasiado. ' +
+            'Prueba con otra foto o tómala con la cámara desde aquí.'
+        )
+      }
+      addPhotoDataUrls(ok)
     } finally {
       setProcessingPhotos(false)
     }

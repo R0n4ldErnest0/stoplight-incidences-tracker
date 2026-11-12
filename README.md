@@ -41,7 +41,7 @@ WhatsApp de la autoridad sin tener que escribirlo de nuevo.
 
 ### Como ciudadano
 - **Reportar un semáforo** con **+ Reportar semáforo**:
-  - **Hasta 4 fotos**, tomadas con la cámara desde la app (**Tomar foto**) o
+  - **Hasta 3 fotos**, tomadas con la cámara desde la app (**Tomar foto**) o
     elegidas de la galería. Las fotos se **comprimen en el navegador** (1600 px
     como máximo, JPEG al 80 %), así que el reporte se publica rápido incluso con
     datos móviles.
