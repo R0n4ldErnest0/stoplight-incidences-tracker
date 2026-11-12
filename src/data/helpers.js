@@ -87,10 +87,17 @@ export function computeDashboard(incidents) {
   for (const i of incidents) {
     const d = i.district || 'Otro'
     if (!districts[d]) {
-      districts[d] = { district: d, total: 0, active: 0, resolved: 0, _sum: 0, _n: 0 }
+      districts[d] = {
+        district: d, total: 0, active: 0, resolved: 0, _sum: 0, _n: 0,
+        _lat: 0, _lng: 0, _pts: 0, _alat: 0, _alng: 0, _apts: 0,
+      }
     }
     const e = districts[d]
     e.total++
+    if (Number.isFinite(i.lat) && Number.isFinite(i.lng)) {
+      e._lat += i.lat; e._lng += i.lng; e._pts++
+      if (isActive(i)) { e._alat += i.lat; e._alng += i.lng; e._apts++ }
+    }
     if (isActive(i)) e.active++
     if (i.status === 'resolved') {
       e.resolved++
@@ -108,6 +115,10 @@ export function computeDashboard(incidents) {
       active: e.active,
       resolved: e.resolved,
       avgDays: e._n ? Math.round(e._sum / e._n) : null,
+      // Centro de los reportes pendientes (o de todos, si no hay pendientes):
+      // ubica la burbuja del distrito en el mapa sin necesitar sus límites.
+      lat: e._apts ? e._alat / e._apts : e._pts ? e._lat / e._pts : null,
+      lng: e._apts ? e._alng / e._apts : e._pts ? e._lng / e._pts : null,
     }))
     .sort((a, b) => b.active - a.active || b.total - a.total)
 
@@ -123,4 +134,64 @@ export function computeDashboard(incidents) {
     byFault,
     byDistrict,
   }
+}
+
+// Mes 'YYYY-MM' de una fecha ISO (hora local).
+function monthKey(iso) {
+  const d = new Date(iso)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+// Evolución mensual: reportes nuevos vs resueltos por mes, del primer reporte
+// al mes actual (máx. los últimos `maxMonths`). Un reporte cuenta como
+// resuelto en el mes de su evento 'resolved' del historial.
+export function computeMonthlyTrend(incidents, maxMonths = 12) {
+  if (!incidents.length) return []
+  const created = {}
+  const resolved = {}
+  let first = Infinity
+  for (const i of incidents) {
+    const t = new Date(i.createdAt).getTime()
+    if (t < first) first = t
+    const k = monthKey(i.createdAt)
+    created[k] = (created[k] || 0) + 1
+    const ev = [...(i.history || [])].reverse().find((h) => h.status === 'resolved')
+    if (i.status === 'resolved' && ev) {
+      const rk = monthKey(ev.at)
+      resolved[rk] = (resolved[rk] || 0) + 1
+    }
+  }
+  const months = []
+  const now = new Date()
+  const cursor = new Date(new Date(first).getFullYear(), new Date(first).getMonth(), 1)
+  while (cursor <= now) {
+    const k = monthKey(cursor.toISOString())
+    months.push({
+      key: k,
+      date: new Date(cursor),
+      created: created[k] || 0,
+      resolved: resolved[k] || 0,
+    })
+    cursor.setMonth(cursor.getMonth() + 1)
+  }
+  return months.slice(-maxMonths)
+}
+
+// Antigüedad de los reportes pendientes, en tramos ordenados.
+export const AGE_BANDS = [
+  { key: '0-7', label: '0–7 días', min: 0, max: 7 },
+  { key: '8-30', label: '8–30 días', min: 8, max: 30 },
+  { key: '31-90', label: '31–90 días', min: 31, max: 90 },
+  { key: '90+', label: 'Más de 90 días', min: 91, max: Infinity },
+]
+
+export function computeAgeBands(incidents) {
+  const active = incidents.filter(isActive)
+  return AGE_BANDS.map((b) => {
+    const count = active.filter((i) => {
+      const a = ageDays(i)
+      return a >= b.min && a <= b.max
+    }).length
+    return { ...b, count, share: active.length ? count / active.length : 0 }
+  })
 }

@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { FiClock } from 'react-icons/fi'
-import { computeDashboard, ageDays } from '../data/helpers.js'
+import { computeDashboard, computeMonthlyTrend, computeAgeBands, ageDays } from '../data/helpers.js'
+import { TrendChart, AgeHistogram, DistrictBubbleMap } from './DashboardCharts.jsx'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import StatusBadge from './StatusBadge.jsx'
 
@@ -21,6 +22,8 @@ function Metric({ value, label, sub, color }) {
 
 export default function DashboardView({ incidents, onSelect }) {
   const d = useMemo(() => computeDashboard(incidents), [incidents])
+  const months = useMemo(() => computeMonthlyTrend(incidents), [incidents])
+  const ageBands = useMemo(() => computeAgeBands(incidents), [incidents])
 
   if (d.total === 0) {
     return (
@@ -57,6 +60,12 @@ export default function DashboardView({ incidents, onSelect }) {
           />
         </div>
 
+        {/* ¿La autoridad sigue el ritmo? Si "Resueltos" queda por debajo de
+            "Nuevos" mes a mes, los pendientes se acumulan. */}
+        <h4 className="dash-section">Evolución mensual</h4>
+        <p className="dash-sub dash-sub-tight">Reportes nuevos frente a reportes resueltos cada mes.</p>
+        <TrendChart months={months} />
+
         {/* Reparto por estado */}
         <h4 className="dash-section">Por estado</h4>
         <div className="bars">
@@ -77,6 +86,11 @@ export default function DashboardView({ incidents, onSelect }) {
           })}
         </div>
 
+        {/* Cuánto llevan esperando los pendientes */}
+        <h4 className="dash-section">¿Cuánto llevan esperando?</h4>
+        <p className="dash-sub dash-sub-tight">Reportes sin resolver según su antigüedad.</p>
+        <AgeHistogram bands={ageBands} />
+
         {/* Semáforos más antiguos sin resolver — el ángulo de rendición de cuentas */}
         <h4 className="dash-section"><FiClock /> Más antiguos sin resolver</h4>
         <div className="oldest">
@@ -96,8 +110,9 @@ export default function DashboardView({ incidents, onSelect }) {
           })}
         </div>
 
-        {/* Desglose por distrito */}
+        {/* Desglose por distrito: mapa de burbujas + tabla con los números */}
         <h4 className="dash-section">Por distrito</h4>
+        <DistrictBubbleMap districts={d.byDistrict} />
         <div className="district-table">
           <div className="district-head">
             <span>Distrito</span>

@@ -723,7 +723,8 @@ button svg,
   position: absolute;
   inset: 0;
   overflow-y: auto;
-  padding: 20px 16px 40px;
+  /* Espacio final para que lo último no quede bajo el botón flotante. */
+  padding: 20px 16px 110px;
 }
 .dash { max-width: 880px; margin: 0 auto; }
 .dash-h { margin: 0 0 4px; font-size: 20px; }
@@ -1104,3 +1105,48 @@ button svg,
 @media (max-width: 800px) {
   .manage-cols { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- Gráficos del panel de transparencia ---------- */
+.dash-sub-tight { margin: -4px 0 10px; }
+.chart {
+  margin: 0;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 12px 8px;
+}
+.chart-plot { position: relative; width: 100%; }
+.chart-plot svg { display: block; outline: none; }
+.chart-plot svg:focus-visible, .chart-plot g:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.chart-tick { font-size: 12px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.chart-value { font-size: 13px; font-weight: 700; fill: var(--text); }
+.chart-legend { display: flex; gap: 16px; font-size: 13px; color: var(--text); margin-bottom: 6px; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.key-line { display: inline-block; width: 14px; height: 2px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+.chart-legend .key-line { margin-right: 0; }
+.chart-tip {
+  position: absolute;
+  top: 0;
+  width: max-content;
+  max-width: 200px;
+  white-space: nowrap;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--muted);
+  pointer-events: none;
+}
+.chart-tip b { color: var(--text); font-size: 14px; margin-right: 4px; }
+.chart-tip-title { font-weight: 700; color: var(--text); margin-bottom: 2px; }
+.chart-table { margin-top: 6px; font-size: 13px; }
+.chart-table summary { cursor: pointer; color: var(--accent-strong); font-weight: 600; }
+.chart-table table { width: 100%; border-collapse: collapse; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.chart-table th, .chart-table td { text-align: left; padding: 4px 6px; border-top: 1px solid var(--border); }
+.chart-table th { color: var(--muted); font-weight: 600; }
+.chart-caption { font-size: 12px; color: var(--muted); margin-top: 8px; }
+.bubble-map { height: 320px; border-radius: 8px; overflow: hidden; }
+.bubble-map .leaflet-container { height: 100%; width: 100%; }
+.dash .chart + .district-table { margin-top: 12px; }
