@@ -451,6 +451,7 @@ export default function ReportForm({ onClose, onCreated }) {
               type="text"
               placeholder="Ej: Av. Javier Prado con Av. Arequipa"
               value={title}
+              maxLength={150} /* igual que la restricción en la BD (schema.sql) */
               onChange={(e) => setTitle(e.target.value)}
             />
           </div>
@@ -472,6 +473,7 @@ export default function ReportForm({ onClose, onCreated }) {
               className="textarea"
               placeholder="¿Qué pasa exactamente? ¿Desde cuándo? ¿Es peligroso?"
               value={description}
+              maxLength={1500} /* igual que la restricción en la BD (schema.sql) */
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
