@@ -89,33 +89,35 @@ test('a flagged report shows a badge, remembers the flag, and hides at 2 flags',
   await page.goto('/')
   page.on('dialog', (d) => d.accept())
   await page.getByRole('button', { name: /Lista/ }).click()
+  // La lista va del más reciente al más antiguo: trabajamos con el primero.
+  // (Varios reportes pueden compartir el mismo cruce, así que no usamos el título.)
   const firstCard = page.locator('.card').first()
-  const title = await firstCard.locator('.card-title').textContent()
   await firstCard.click()
   await page.getByRole('button', { name: /Reportar contenido/ }).click()
   await expect(page.getByText(/Gracias\. Un revisor/)).toBeVisible()
 
   // Cerrar y reabrir: ya no ofrece el botón, muestra el aviso.
   await page.getByRole('button', { name: 'Cerrar' }).click()
-  const card = page.locator('.card', { hasText: title })
-  await expect(card.getByText('Marcado · en revisión')).toBeVisible()
-  await card.click()
+  await expect(firstCard.getByText('Marcado · en revisión')).toBeVisible()
+  await firstCard.click()
   await expect(page.getByText('Ya reportaste este contenido · en revisión')).toBeVisible()
   await expect(page.getByRole('button', { name: /Reportar contenido/ })).toHaveCount(0)
   await page.getByRole('button', { name: 'Cerrar' }).click()
 
-  // Simula un 2º reporte (desde otro dispositivo) directo en el almacenamiento demo.
-  await page.evaluate((t) => {
-    const key = 'semaforo-alerta:incidents:v1'
+  // Simula un 2º reporte (desde otro dispositivo) directo en el almacenamiento
+  // demo, sobre el reporte más reciente (el que marcamos).
+  const before = await page.locator('.card').count()
+  await page.evaluate(() => {
+    const key = 'semaforo-alerta:incidents:v2'
     const list = JSON.parse(localStorage.getItem(key))
-    const inc = list.find((i) => i.title === t)
-    inc.flags = 2
-    inc.hidden = true
+    const newest = list.reduce((a, b) => (new Date(b.createdAt) > new Date(a.createdAt) ? b : a))
+    newest.flags = 2
+    newest.hidden = true
     localStorage.setItem(key, JSON.stringify(list))
-  }, title)
+  })
   await page.reload()
   await page.getByRole('button', { name: /Lista/ }).click()
-  await expect(page.locator('.card', { hasText: title })).toHaveCount(0)
+  await expect(page.locator('.card')).toHaveCount(before - 1)
   await page.getByLabel(/Mostrar ocultos por la comunidad/).check()
-  await expect(page.locator('.card', { hasText: title }).getByText('Oculto · en revisión')).toBeVisible()
+  await expect(page.locator('.card').first().getByText('Oculto · en revisión')).toBeVisible()
 })

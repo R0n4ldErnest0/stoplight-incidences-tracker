@@ -5,7 +5,8 @@ import { SEED_INCIDENTS } from './seed.js'
 import { distanceMeters, computeStats } from './helpers.js'
 import { HIDE_THRESHOLD } from '../constants.js'
 
-const STORAGE_KEY = 'semaforo-alerta:incidents:v1'
+// v2: datos demo ampliados (seed.js generado); cambiar la clave recarga el seed.
+const STORAGE_KEY = 'semaforo-alerta:incidents:v2'
 
 function load() {
   try {
