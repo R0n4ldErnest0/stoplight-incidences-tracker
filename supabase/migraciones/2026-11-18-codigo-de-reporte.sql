@@ -17,6 +17,9 @@
 
 -- 1) Columnas y secuencia ----------------------------------------------------
 create sequence if not exists public.incident_number_seq;
+-- Solo la BD la usa (desde el trigger). Supabase da acceso a las secuencias
+-- nuevas al público por defecto: se le quita, para que nadie "queme" números.
+revoke all on sequence public.incident_number_seq from public, anon, authenticated;
 
 alter table public.incidents add column if not exists number bigint;
 alter table public.incidents add column if not exists code text;
