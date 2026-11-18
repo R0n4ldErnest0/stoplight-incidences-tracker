@@ -1,5 +1,7 @@
 // Funciones puras compartidas por ambos backends (local y Supabase).
 
+import { normalize } from './peru.js'
+
 // Distancia en metros entre dos coordenadas (Haversine).
 export function distanceMeters(a, b) {
   const R = 6371000
@@ -196,4 +198,31 @@ export function computeAgeBands(incidents) {
     }).length
     return { ...b, count, share: active.length ? count / active.length : 0 }
   })
+}
+
+// ---------- Búsqueda en la Lista ----------
+
+// ¿El reporte coincide con lo que se escribió en el buscador? Busca en el
+// código, el cruce, la descripción y la ubicación, sin importar tildes ni
+// mayúsculas; cada palabra escrita debe aparecer. Si se escribe solo un número
+// (p. ej. "123"), encuentra el reporte con ese número exacto.
+export function matchesQuery(incident, query) {
+  const q = normalize(query)
+  if (!q) return true
+  const compact = q.replace(/\s+/g, '')
+  const onlyDigits = /^\d+$/.test(compact)
+  if (onlyDigits && incident.number === Number(compact)) return true
+  const haystack = normalize(
+    [
+      // Con solo dígitos no se busca dentro del código: "123" no debe traer
+      // también el 001230 o el 012345 (sí puede estar en el nombre del cruce).
+      onlyDigits ? '' : incident.code,
+      incident.title,
+      incident.description,
+      incident.district,
+      incident.provincia,
+      incident.departamento,
+    ].join(' ')
+  )
+  return q.split(/\s+/).every((word) => haystack.includes(word))
 }

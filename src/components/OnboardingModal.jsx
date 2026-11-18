@@ -1,4 +1,4 @@
-import { FiInfo, FiPlus, FiCamera, FiAlertTriangle, FiActivity } from 'react-icons/fi'
+import { FiInfo, FiPlus, FiCamera, FiAlertTriangle, FiHash } from 'react-icons/fi'
 import { useBackClose } from '../useBackClose.js'
 
 // Se muestra una sola vez, la primera vez que alguien abre la app en este
@@ -23,9 +23,9 @@ const ONBOARDING_STEPS = [
     text: 'Elige el tipo de falla (apagado, intermitente...) y describe el problema.',
   },
   {
-    Icon: FiActivity,
-    title: 'Publica y sigue el estado',
-    text: 'Tu reporte queda público en el mapa. Verás en todo momento si la autoridad lo revisó, si está en reparación o ya se resolvió.',
+    Icon: FiHash,
+    title: 'Publica y guarda tu código',
+    text: 'Recibirás un código como LIM-MIR-000123. Con él buscas tu reporte en la Lista (también queda en "Mis reportes" de este teléfono) y ves si la autoridad lo revisó, si está en reparación o ya se resolvió.',
   },
 ]
 

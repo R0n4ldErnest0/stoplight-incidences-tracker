@@ -4,6 +4,7 @@
 import { SEED_INCIDENTS } from './seed.js'
 import { distanceMeters, computeStats } from './helpers.js'
 import { HIDE_THRESHOLD } from '../constants.js'
+import { makeIncidentCode } from './incidentCode.js'
 
 // v2: datos demo ampliados (seed.js generado); cambiar la clave recarga el seed.
 const STORAGE_KEY = 'semaforo-alerta:incidents:v2'
@@ -15,11 +16,27 @@ function load() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(SEED_INCIDENTS))
       return [...SEED_INCIDENTS]
     }
-    return JSON.parse(raw)
+    return withCodes(JSON.parse(raw))
   } catch (err) {
     console.error('No se pudo leer el almacenamiento local:', err)
     return [...SEED_INCIDENTS]
   }
+}
+
+// Datos demo guardados antes de que existiera el código público: les asigna
+// número y código por fecha de creación, igual que la migración en la BD.
+function withCodes(incidents) {
+  if (incidents.every((i) => i.number)) return incidents
+  let next = Math.max(0, ...incidents.map((i) => i.number || 0)) + 1
+  ;[...incidents]
+    .filter((i) => !i.number)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+    .forEach((i) => {
+      i.number = next++
+      i.code = makeIncidentCode(i.departamento, i.district, i.number)
+    })
+  save(incidents)
+  return incidents
 }
 
 function save(incidents) {
@@ -63,14 +80,19 @@ export async function createIncident(input) {
     : input.photo
       ? [input.photo]
       : []
+  // Número correlativo único (en Supabase lo asigna la BD con una secuencia).
+  const number = Math.max(0, ...incidents.map((i) => i.number || 0)) + 1
+  const district = input.district || input.distrito || 'Otro'
   const incident = {
     id: genId(),
+    number,
+    code: makeIncidentCode(input.departamento, district, number),
     title: input.title?.trim() || 'Semáforo sin nombre de cruce',
     description: input.description?.trim() || '',
     faultType: input.faultType || 'otro',
     departamento: input.departamento || '',
     provincia: input.provincia || '',
-    district: input.district || input.distrito || 'Otro', // distrito
+    district, // distrito
     lat: input.lat,
     lng: input.lng,
     status: 'reported',

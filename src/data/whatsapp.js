@@ -41,6 +41,7 @@ export function buildWhatsappReportUrl(incident, authority) {
   const photoUrls = shareablePhotoUrls(incident)
   const lines = [
     'Hola, quiero reportar un semáforo malogrado:',
+    incident.code && `🔖 Código: ${incident.code}`,
     incident.title && `📍 ${incident.title}`,
     lugar && `🏙️ ${lugar}`,
     `🗺️ Ubicación: ${gmaps}`,

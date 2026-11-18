@@ -1190,3 +1190,127 @@ button svg,
 .metric .how-box { margin: 10px 0 0; border-left-width: 3px; }
 .inline-icon { vertical-align: -2px; }
 .dash-section-row .dash-section { display: inline-flex; align-items: center; gap: 6px; }
+
+/* ---------- Código público del reporte (LIM-MIR-000123) ---------- */
+.incident-code { margin: 0 0 10px; }
+.incident-code-row { display: flex; align-items: center; gap: 2px; }
+.code-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 3px 9px;
+}
+.code-pill svg { color: var(--muted); }
+.incident-code.large .code-pill { font-size: 20px; padding: 8px 14px; border-color: var(--accent); }
+.incident-code .how-box { margin: 8px 0 0; }
+.tag-code {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-weight: 700;
+  color: var(--text);
+}
+.tag-mine { background: #e0f2fe; border-color: #7dd3fc; color: var(--accent-strong); font-weight: 600; }
+
+/* Confirmación al publicar */
+.report-success .drawer-head h2 { display: inline-flex; align-items: center; gap: 8px; }
+.success-icon { color: #16a34a; font-size: 22px; }
+.success-lead { margin: 0 0 12px; }
+.success-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 6px; }
+.report-success .btn-block { margin-top: 14px; }
+
+/* ---------- Lista: buscador + filtros ---------- */
+.list-toolbar {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+}
+.list-search-row { display: flex; gap: 8px; align-items: center; max-width: 820px; margin: 0 auto; }
+.list-search {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0 4px 0 10px;
+  color: var(--muted);
+}
+.list-search:focus-within { border-color: var(--accent); }
+.list-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  padding: 9px 0;
+  outline: none;
+}
+.list-search input::-webkit-search-cancel-button { display: none; }
+.list-search-clear {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 18px;
+  padding: 6px;
+  display: grid;
+  place-items: center;
+}
+.list-filters-toggle { display: none; white-space: nowrap; }
+.list-filters-toggle.open { border-color: var(--accent); color: var(--accent-strong); }
+.list-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  max-width: 820px;
+  margin: 8px auto 0;
+}
+.mine-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel-2);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.mine-toggle.active { border-color: var(--accent); background: #e0f2fe; color: var(--accent-strong); }
+.list-clear { margin-left: auto; }
+.list-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  max-width: 820px;
+  margin: 14px auto 96px; /* espacio para que el botón flotante no lo tape */
+}
+
+/* Mobile: los filtros se pliegan detrás del botón "Filtros (n)". */
+@media (max-width: 640px) {
+  .list-filters-toggle { display: inline-flex; align-items: center; gap: 6px; }
+  .list-filters { display: none; }
+  .list-filters.open { display: grid; grid-template-columns: minmax(0, 1fr); }
+  .list-filters .date-filter,
+  .list-filters .date-select { width: 100%; }
+  .list-filters .date-filter { display: flex; flex-wrap: wrap; }
+  .list-filters .date-select { flex: 1; min-width: 0; font-size: 15px; padding: 9px 10px; }
+  .list-filters .custom-dates { display: flex; flex: 1; }
+  .list-filters .mine-toggle { justify-self: start; font-size: 14px; }
+  .list-clear { margin-left: 0; justify-self: start; }
+}

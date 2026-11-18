@@ -27,7 +27,7 @@ export const STEPS = [
   {
     Icon: FiMap,
     title: 'Queda público',
-    text: 'El reporte aparece en un mapa abierto para todos, con su historial visible.',
+    text: 'El reporte aparece en un mapa abierto para todos, con su historial visible y un código único (ej. LIM-MIR-000123) para buscarlo y seguirlo.',
   },
   {
     Icon: FiActivity,

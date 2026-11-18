@@ -8,6 +8,8 @@
 // Reportado → Revisado → En reparación → Resuelto con demoras realistas, así
 // que los más antiguos tienden a estar resueltos y los recientes pendientes.
 
+import { makeIncidentCode } from './incidentCode.js'
+
 // Cruces conocidos de Lima (coordenadas aproximadas).
 const CROSSINGS = [
   { title: 'Av. Javier Prado con Av. Arequipa', district: 'Lince', lat: -12.0931, lng: -77.0364 },
@@ -153,6 +155,12 @@ function generateSeed() {
   byAge[25].flags = 1
   byAge[40].flags = 2
   byAge[40].hidden = true
+
+  // Código público: número correlativo por fecha de creación, como en la BD.
+  byAge.forEach((inc, i) => {
+    inc.number = i + 1
+    inc.code = makeIncidentCode(inc.departamento, inc.district, inc.number)
+  })
 
   return incidents
 }

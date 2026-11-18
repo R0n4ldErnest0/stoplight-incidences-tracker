@@ -8,6 +8,7 @@ import { buildWhatsappReportUrl, shareablePhotoUrls, AUTHORITIES } from '../data
 import { buildIncidentUrl } from '../shareLink.js'
 import { useBackClose } from '../useBackClose.js'
 import StatusBadge from './StatusBadge.jsx'
+import IncidentCode from './IncidentCode.jsx'
 import ModerationActions, { removalReasonLabel } from './ModerationActions.jsx'
 
 function fmtDate(iso) {
@@ -72,7 +73,11 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
   async function share() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: incident.title, url: shareUrl })
+        await navigator.share({
+          title: incident.title,
+          text: incident.code ? `Reporte ${incident.code} · ${incident.title}` : incident.title,
+          url: shareUrl,
+        })
       } catch {
         // el usuario canceló el share sheet — no es un error
       }
@@ -151,6 +156,8 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
               <span className="age-flag"><FiAlertTriangle /> {age} días sin resolver</span>
             )}
           </div>
+
+          <IncidentCode incident={incident} />
 
           {/* Aviso público: cualquiera ve que el reporte fue marcado y está en
               revisión (transparencia también en la moderación). */}

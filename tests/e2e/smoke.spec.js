@@ -8,6 +8,18 @@ test.beforeEach(async ({ page }) => {
   })
 })
 
+// En mobile los filtros de la Lista se pliegan detrás de "Filtros (n)".
+async function openListFilters(page) {
+  const toggle = page.locator('.list-filters-toggle')
+  if (await toggle.isVisible()) await toggle.click()
+}
+
+// Total de reportes que muestra el contador de la Lista (paginada de a 20).
+async function listTotal(page) {
+  const text = await page.locator('.list-count').innerText()
+  return Number(text.match(/(\d+) report/)[1])
+}
+
 test('loads in demo mode with the seeded data', async ({ page }) => {
   await page.goto('/')
   await expect(page).toHaveTitle(/SemáforoAlerta/)
@@ -18,7 +30,7 @@ test('loads in demo mode with the seeded data', async ({ page }) => {
 test('can switch between the three main views', async ({ page }) => {
   await page.goto('/')
   await page.getByRole('button', { name: /Lista/ }).click()
-  await expect(page.getByText(/incidencia\(s\)/)).toBeVisible()
+  await expect(page.locator('.list-count')).toBeVisible()
   await page.getByRole('button', { name: /Transparencia/ }).click()
   await page.getByRole('button', { name: /Mapa/ }).click()
 })
@@ -40,6 +52,7 @@ test('date-range filter is available', async ({ page }) => {
   // En mapa + mobile la franja de escritorio se oculta (resumen flotante);
   // la barra de Lista tiene el selector de fecha en cualquier ancho.
   await page.getByRole('button', { name: /Lista/ }).click()
+  await openListFilters(page)
   const dateSelect = page.locator('label[title="Filtrar por antigüedad del reporte"] select')
   await expect(dateSelect).toBeVisible()
   await dateSelect.selectOption('7d')
@@ -106,7 +119,7 @@ test('a flagged report shows a badge, remembers the flag, and hides at 2 flags',
 
   // Simula un 2º reporte (desde otro dispositivo) directo en el almacenamiento
   // demo, sobre el reporte más reciente (el que marcamos).
-  const before = await page.locator('.card').count()
+  const before = await listTotal(page)
   await page.evaluate(() => {
     const key = 'semaforo-alerta:incidents:v2'
     const list = JSON.parse(localStorage.getItem(key))
@@ -117,7 +130,55 @@ test('a flagged report shows a badge, remembers the flag, and hides at 2 flags',
   })
   await page.reload()
   await page.getByRole('button', { name: /Lista/ }).click()
-  await expect(page.locator('.card')).toHaveCount(before - 1)
+  await expect.poll(() => listTotal(page)).toBe(before - 1)
+  await openListFilters(page)
   await page.getByLabel(/Mostrar ocultos por la comunidad/).check()
   await expect(page.locator('.card').first().getByText('Oculto · en revisión')).toBeVisible()
+})
+
+test('cards show a public code and the search finds a report by its number', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Lista/ }).click()
+  const code = (await page.locator('.card .tag-code').first().innerText()).trim()
+  expect(code).toMatch(/^[A-Z]{3}-[A-Z]{2,3}-\d{6}$/)
+  const number = String(Number(code.split('-')[2]))
+  // Solo el número (sin ceros) basta para encontrarlo.
+  await page.getByLabel('Buscar reportes').fill(number)
+  await expect(page.locator('.card')).toHaveCount(1)
+  await expect(page.locator('.card .tag-code')).toHaveText(code)
+  // El código completo, en minúsculas, también.
+  await page.getByLabel('Buscar reportes').fill(code.toLowerCase())
+  await expect(page.locator('.card')).toHaveCount(1)
+  // El detalle muestra el código con su explicación.
+  await page.locator('.card').first().click()
+  await page.getByRole('button', { name: '¿Qué significa este código?' }).click()
+  await expect(page.getByText(/único en todo el país/)).toBeVisible()
+})
+
+test('the list shows 20 reports at a time with "Ver más"', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Lista/ }).click()
+  await expect(page.locator('.card')).toHaveCount(20)
+  await expect(page.locator('.list-count')).toContainText('Mostrando 20 de')
+  await page.getByRole('button', { name: /Ver más/ }).click()
+  await expect(page.locator('.card')).toHaveCount(40)
+})
+
+test('filters by fault type and "Mis reportes"', async ({ page }) => {
+  await page.goto('/')
+  // Simula que este dispositivo publicó dos reportes del demo.
+  await page.evaluate(() => {
+    localStorage.setItem('semaforo-alerta:my-reports:v1', JSON.stringify(['seed-1', 'seed-2']))
+  })
+  await page.reload()
+  await page.getByRole('button', { name: /Lista/ }).click()
+  await openListFilters(page)
+  await page.getByLabel(/Mis reportes/).check()
+  await expect(page.locator('.card')).toHaveCount(2)
+  await expect(page.locator('.card .tag-mine')).toHaveCount(2)
+  await page.getByRole('button', { name: /Limpiar filtros/ }).click()
+  await page.getByLabel('Tipo de falla').selectOption('apagado')
+  const total = await listTotal(page)
+  expect(total).toBeGreaterThan(0)
+  await expect(page.locator('.card .tag', { hasText: 'Apagado o Sin luz' })).toHaveCount(Math.min(total, 20))
 })

@@ -21,6 +21,9 @@ function mapRow(row) {
       : []
   return {
     id: row.id,
+    // Código público (p. ej. LIM-MIR-000123): lo asigna la BD al insertar.
+    number: row.number ?? null,
+    code: row.code || '',
     title: row.title,
     description: row.description || '',
     faultType: row.fault_type || 'otro',

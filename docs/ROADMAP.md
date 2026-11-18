@@ -67,6 +67,15 @@ en servidor.
 - [ ] Recomprimir las fotos antiguas (subidas antes de la compresión, ~2,8 MB c/u, ~38 MB en
       total); requiere la clave `service_role` solo en un entorno local.
 
+## Seguimiento de reportes
+
+- [ ] **Código de reporte en producción** (`LIM-MIR-000123`): correr
+  `supabase/migraciones/2026-11-18-codigo-de-reporte.sql` en Supabase y subir la app.
+- [ ] **«Mis reportes» en la BD** (fase 1 de seguridad): con la sesión anónima de Supabase,
+  guardar el id de sesión en cada reporte; hoy se guarda solo en el dispositivo.
+- [ ] **Búsqueda y páginas en el servidor** cuando haya varios miles de reportes (hoy se
+  descargan todos y se filtra en el navegador), y agrupar los pines cercanos del mapa.
+
 ## Otros
 
 - [ ] Detección de reportes del mismo semáforo (agrupar por cercanía ~30 m).

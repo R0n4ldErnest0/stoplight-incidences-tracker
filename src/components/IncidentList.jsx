@@ -1,4 +1,5 @@
-import { FiCamera, FiCalendar, FiRefreshCw, FiClock, FiFlag, FiEyeOff } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiCamera, FiCalendar, FiRefreshCw, FiClock, FiFlag, FiEyeOff, FiHash, FiUser, FiChevronDown } from 'react-icons/fi'
 import { STATUSES, FAULT_TYPES } from '../constants.js'
 import { ageDays } from '../data/store.js'
 import StatusBadge from './StatusBadge.jsx'
@@ -17,27 +18,44 @@ function lastUpdate(incident) {
   return incident.history[incident.history.length - 1]?.at || incident.createdAt
 }
 
-export default function IncidentList({ incidents, onSelect }) {
+// Se muestran de a 20: con cientos de reportes, dibujar todas las tarjetas
+// (y descargar todas sus fotos) de una vez haría la lista lenta en el teléfono.
+const PAGE_SIZE = 20
+
+export default function IncidentList({ incidents, onSelect, myIds, pageKey, filtered }) {
+  const [shown, setShown] = useState(PAGE_SIZE)
+  // Nueva búsqueda o filtro -> vuelve a la primera página.
+  useEffect(() => setShown(PAGE_SIZE), [pageKey])
+
   if (incidents.length === 0) {
     return (
       <div className="list-empty">
-        No hay incidencias para este filtro.
+        {filtered
+          ? 'Ningún reporte coincide con la búsqueda o los filtros.'
+          : 'Todavía no hay reportes.'}
       </div>
     )
   }
 
+  const page = incidents.slice(0, shown)
+  const remaining = incidents.length - page.length
+
   return (
     <div className="list-wrap">
-      <div className="list-count">{incidents.length} incidencia(s)</div>
+      <div className="list-count">
+        {remaining > 0
+          ? `Mostrando ${page.length} de ${incidents.length} reportes`
+          : `${incidents.length} reporte(s)`}
+      </div>
       <div className="list">
-        {incidents.map((inc) => {
+        {page.map((inc) => {
           const age = ageDays(inc)
           const overdue = age > 90 && inc.status !== 'resolved'
           return (
             <button key={inc.id} className="card" onClick={() => onSelect(inc.id)}>
               <div className="card-thumb">
                 {inc.photo ? (
-                  <img src={inc.photo} alt="" />
+                  <img src={inc.photo} alt="" loading="lazy" decoding="async" />
                 ) : (
                   <span className="card-thumb-empty">🚦</span>
                 )}
@@ -51,6 +69,8 @@ export default function IncidentList({ incidents, onSelect }) {
                   <StatusBadge status={inc.status} />
                 </div>
                 <div className="card-tags">
+                  {inc.code && <span className="tag tag-code"><FiHash /> {inc.code}</span>}
+                  {myIds?.has(inc.id) && <span className="tag tag-mine"><FiUser /> Mi reporte</span>}
                   <span className="tag">{faultLabel(inc.faultType)}</span>
                   <span className="tag">{inc.district}</span>
                   {/* Moderación visible para todos: marcado (1 reporte) u oculto (2+). */}
@@ -73,6 +93,11 @@ export default function IncidentList({ incidents, onSelect }) {
           )
         })}
       </div>
+      {remaining > 0 && (
+        <button type="button" className="btn list-more" onClick={() => setShown((n) => n + PAGE_SIZE)}>
+          <FiChevronDown /> Ver más ({Math.min(PAGE_SIZE, remaining)} de {remaining} restantes)
+        </button>
+      )}
     </div>
   )
 }

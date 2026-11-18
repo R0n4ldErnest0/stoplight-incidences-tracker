@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff, FiFilter, FiShield, FiClipboard } from 'react-icons/fi'
+import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOff, FiShield, FiClipboard } from 'react-icons/fi'
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
+import ListToolbar from './components/ListToolbar.jsx'
+import ReportSuccess from './components/ReportSuccess.jsx'
 import DashboardView from './components/DashboardView.jsx'
 import ModerationView from './components/ModerationView.jsx'
 import ManageView from './components/ManageView.jsx'
@@ -14,6 +16,9 @@ import { listIncidents, computeStats, DATA_SOURCE } from './data/store.js'
 import { initAuth, onAuthChange, getAuthState } from './data/auth.js'
 import { STATUSES, STATUS_ORDER, DATE_RANGES } from './constants.js'
 import { getIncidentIdFromUrl } from './shareLink.js'
+import { matchesQuery } from './data/helpers.js'
+import { normalize, titleCase } from './data/peru.js'
+import { getMyReportIds, addMyReport } from './data/myReports.js'
 
 function fmtShortDate(iso) {
   return new Date(`${iso}T00:00:00`).toLocaleDateString('es-PE', { day: '2-digit', month: '2-digit' })
@@ -104,6 +109,17 @@ export default function App() {
   // ocultarlo se reemplaza por una píldora chiquita con el filtro activo.
   const [statsHidden, setStatsHidden] = useState(false)
   const [showHidden, setShowHidden] = useState(false)
+  // Buscador y filtros propios de la pestaña Lista (estado y fecha se
+  // comparten con el mapa). Viven acá para no perderse al cambiar de pestaña.
+  const [listQuery, setListQuery] = useState('')
+  const [listDep, setListDep] = useState('') // departamento normalizado (normalize)
+  const [listDist, setListDist] = useState('') // distrito normalizado
+  const [listFault, setListFault] = useState('')
+  const [onlyMine, setOnlyMine] = useState(false)
+  // "Mis reportes": ids guardados en este dispositivo (ver data/myReports.js).
+  const [myReportIds, setMyReportIds] = useState(() => getMyReportIds())
+  // Reporte recién publicado: muestra la confirmación con su código.
+  const [createdIncident, setCreatedIncident] = useState(null)
   // 'map' | 'list' | 'dashboard' | solo revisores: 'moderation' | 'manage'
   const [view, setView] = useState('map')
   const [loading, setLoading] = useState(true)
@@ -200,6 +216,61 @@ export default function App() {
     if (filter === 'all') return dateFiltered
     return dateFiltered.filter((i) => i.status === filter)
   }, [dateFiltered, filter])
+
+  // ---------- Lista: buscador + filtros + "Mis reportes" ----------
+  const myIdSet = useMemo(() => new Set(myReportIds), [myReportIds])
+  const myCount = useMemo(
+    () => publicIncidents.filter((i) => myIdSet.has(i.id)).length,
+    [publicIncidents, myIdSet]
+  )
+
+  // Opciones de ubicación según los reportes que existen (no los 1892
+  // distritos del país): así ningún filtro lleva a una lista vacía.
+  const depOptions = useMemo(() => {
+    const m = new Map()
+    publicIncidents.forEach((i) => {
+      const k = normalize(i.departamento)
+      if (k && !m.has(k)) m.set(k, titleCase(i.departamento))
+    })
+    return [...m].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, 'es'))
+  }, [publicIncidents])
+  const distOptions = useMemo(() => {
+    const m = new Map()
+    publicIncidents.forEach((i) => {
+      if (listDep && normalize(i.departamento) !== listDep) return
+      const k = normalize(i.district)
+      if (k && k !== 'OTRO' && !m.has(k)) m.set(k, titleCase(i.district))
+    })
+    return [...m].map(([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label, 'es'))
+  }, [publicIncidents, listDep])
+
+  const listVisible = useMemo(
+    () =>
+      visible.filter(
+        (i) =>
+          (!onlyMine || myIdSet.has(i.id)) &&
+          (!listDep || normalize(i.departamento) === listDep) &&
+          (!listDist || normalize(i.district) === listDist) &&
+          (!listFault || i.faultType === listFault) &&
+          matchesQuery(i, listQuery)
+      ),
+    [visible, onlyMine, myIdSet, listDep, listDist, listFault, listQuery]
+  )
+  const listActiveCount =
+    (filter !== 'all') + (dateRange !== 'all') + !!listDep + !!listDist + !!listFault + onlyMine
+  // Cambia cuando cambia lo que se busca/filtra: la lista vuelve a la 1.ª página.
+  const listPageKey = [listQuery, filter, dateRange, customStart, customEnd, listDep, listDist, listFault, onlyMine, showHidden].join('|')
+
+  function clearListFilters() {
+    setFilter('all')
+    setDateRange('all')
+    setCustomStart('')
+    setCustomEnd('')
+    setListDep('')
+    setListDist('')
+    setListFault('')
+    setOnlyMine(false)
+  }
 
   const selected = incidents.find((i) => i.id === selectedId) || null
 
@@ -337,39 +408,45 @@ export default function App() {
         </div>
       )}
 
-      {/* Lista: los botones de estado se envolvían en varias filas en mobile
-          (ver docs_references) — un desplegable es compacto en cualquier ancho. */}
+      {/* Lista: buscador siempre visible + filtros (plegables en mobile). */}
       {view === 'list' && (
-        <div className="stats">
-          <label className="date-filter" title="Filtrar por estado">
-            <FiFilter />
-            <select
-              className="date-select"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="all">Total ({stats.total})</option>
-              {STATUS_ORDER.map((key) => (
-                <option key={key} value={key}>
-                  {STATUSES[key].label} ({stats.byStatus[key] || 0})
-                </option>
-              ))}
-            </select>
-          </label>
-          <DateRangeSelect
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            customStart={customStart}
-            customEnd={customEnd}
-            onCustomStart={(e) => setCustomStart(e.target.value)}
-            onCustomEnd={(e) => setCustomEnd(e.target.value)}
-          />
-          <HiddenToggle
-            checked={showHidden}
-            onChange={(e) => setShowHidden(e.target.checked)}
-            count={hiddenCount}
-          />
-        </div>
+        <ListToolbar
+          query={listQuery}
+          onQuery={setListQuery}
+          status={filter}
+          onStatus={setFilter}
+          stats={stats}
+          dep={listDep}
+          onDep={(v) => { setListDep(v); setListDist('') }}
+          depOptions={depOptions}
+          dist={listDist}
+          onDist={setListDist}
+          distOptions={distOptions}
+          fault={listFault}
+          onFault={setListFault}
+          onlyMine={onlyMine}
+          onOnlyMine={setOnlyMine}
+          myCount={myCount}
+          activeCount={listActiveCount}
+          onClear={clearListFilters}
+          dateControl={
+            <DateRangeSelect
+              value={dateRange}
+              onChange={(e) => setDateRange(e.target.value)}
+              customStart={customStart}
+              customEnd={customEnd}
+              onCustomStart={(e) => setCustomStart(e.target.value)}
+              onCustomEnd={(e) => setCustomEnd(e.target.value)}
+            />
+          }
+          hiddenControl={
+            <HiddenToggle
+              checked={showHidden}
+              onChange={(e) => setShowHidden(e.target.checked)}
+              count={hiddenCount}
+            />
+          }
+        />
       )}
 
       {/* Transparencia: el filtro de estado no tenía efecto acá (el panel usa
@@ -394,7 +471,13 @@ export default function App() {
         ) : view === 'map' ? (
           <MapView incidents={visible} onSelect={setSelectedId} />
         ) : view === 'list' ? (
-          <IncidentList incidents={visible} onSelect={setSelectedId} />
+          <IncidentList
+            incidents={listVisible}
+            onSelect={setSelectedId}
+            myIds={myIdSet}
+            pageKey={listPageKey}
+            filtered={listActiveCount > 0 || !!listQuery.trim()}
+          />
         ) : view === 'moderation' ? (
           <ModerationView incidents={incidents} onSelect={setSelectedId} onChanged={refresh} />
         ) : view === 'manage' ? (
@@ -489,9 +572,22 @@ export default function App() {
           <ReportForm
             onClose={() => setShowReport(false)}
             onCreated={(inc) => {
+              addMyReport(inc.id)
+              setMyReportIds(getMyReportIds())
               setShowReport(false)
               refresh()
-              setSelectedId(inc.id)
+              setCreatedIncident(inc)
+            }}
+          />
+        )}
+
+        {createdIncident && (
+          <ReportSuccess
+            incident={createdIncident}
+            onClose={() => setCreatedIncident(null)}
+            onView={() => {
+              setCreatedIncident(null)
+              setSelectedId(createdIncident.id)
             }}
           />
         )}
