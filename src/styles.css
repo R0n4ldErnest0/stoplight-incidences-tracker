@@ -1314,3 +1314,6 @@ button svg,
   .list-filters .mine-toggle { justify-self: start; font-size: 14px; }
   .list-clear { margin-left: 0; justify-self: start; }
 }
+
+/* Acerca de: volver a ver la guía de bienvenida */
+.about-guide-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px; }

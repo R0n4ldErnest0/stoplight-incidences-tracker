@@ -10,7 +10,9 @@
 
 import { makeIncidentCode } from './incidentCode.js'
 
-// Cruces conocidos de Lima (coordenadas aproximadas).
+// Cruces conocidos (coordenadas aproximadas). Sin `dep`/`prov` = Lima/Lima;
+// unos pocos de Callao, Arequipa y Cusco para que el filtro por departamento
+// y los códigos (CAL-, ARE-, CUS-) tengan variedad.
 const CROSSINGS = [
   { title: 'Av. Javier Prado con Av. Arequipa', district: 'Lince', lat: -12.0931, lng: -77.0364 },
   { title: 'Óvalo Gutiérrez', district: 'Miraflores', lat: -12.1145, lng: -77.0353 },
@@ -38,6 +40,14 @@ const CROSSINGS = [
   { title: 'Av. Javier Prado Este con Av. Nicolás Ayllón', district: 'Ate', lat: -12.0585, lng: -76.9505 },
   { title: 'Av. Defensores del Morro con Av. Huaylas', district: 'Chorrillos', lat: -12.1720, lng: -77.0150 },
   { title: 'Av. Los Héroes con Av. San Juan', district: 'San Juan de Miraflores', lat: -12.1550, lng: -76.9720 },
+  { title: 'Av. Faucett con Av. Colonial', district: 'Callao', dep: 'CALLAO', prov: 'CALLAO', lat: -12.0480, lng: -77.1040 },
+  { title: 'Av. La Marina con Av. Faucett', district: 'Bellavista', dep: 'CALLAO', prov: 'CALLAO', lat: -12.0716, lng: -77.1032 },
+  { title: 'Av. Néstor Gambetta con Av. Pedro Beltrán', district: 'Ventanilla', dep: 'CALLAO', prov: 'CALLAO', lat: -11.8750, lng: -77.1270 },
+  { title: 'Av. Ejército con Av. Cayma', district: 'Cayma', dep: 'AREQUIPA', prov: 'AREQUIPA', lat: -16.3920, lng: -71.5450 },
+  { title: 'Av. Independencia con Av. Venezuela', district: 'Arequipa', dep: 'AREQUIPA', prov: 'AREQUIPA', lat: -16.4040, lng: -71.5250 },
+  { title: 'Av. Dolores con Av. Los Incas', district: 'José Luis Bustamante y Rivero', dep: 'AREQUIPA', prov: 'AREQUIPA', lat: -16.4230, lng: -71.5200 },
+  { title: 'Av. de la Cultura con Av. Garcilaso', district: 'Wanchaq', dep: 'CUSCO', prov: 'CUSCO', lat: -13.5245, lng: -71.9690 },
+  { title: 'Av. El Sol con Av. Tullumayo', district: 'Cusco', dep: 'CUSCO', prov: 'CUSCO', lat: -13.5225, lng: -71.9750 },
 ]
 
 const FAULTS = [
@@ -93,9 +103,10 @@ function generateSeed() {
 
   const now = Date.now()
   const incidents = []
-  // Unos 80 reportes en 365 días, con más reportes en los meses recientes
-  // (la app se va conociendo): la edad se sesga hacia valores bajos.
-  const COUNT = 80
+  // Unos 250 reportes en 365 días (suficientes para ver la lista paginada y
+  // los filtros con volumen), con más reportes en los meses recientes (la
+  // app se va conociendo): la edad se sesga hacia valores bajos.
+  const COUNT = 250
   for (let n = 0; n < COUNT; n++) {
     const ageDays = Math.pow(rand(), 1.4) * 365
     // Hora del día entre 6 a.m. y 11 p.m. (hora local aproximada).
@@ -130,8 +141,8 @@ function generateSeed() {
       title: c.title,
       description: pick(descriptions),
       faultType,
-      departamento: 'LIMA',
-      provincia: 'LIMA',
+      departamento: c.dep || 'LIMA',
+      provincia: c.prov || 'LIMA',
       district: c.district,
       // Pequeña variación para que reportes del mismo cruce no se tapen.
       lat: +(c.lat + between(-0.0012, 0.0012)).toFixed(5),

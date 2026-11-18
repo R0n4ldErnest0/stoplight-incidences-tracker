@@ -121,7 +121,7 @@ test('a flagged report shows a badge, remembers the flag, and hides at 2 flags',
   // demo, sobre el reporte más reciente (el que marcamos).
   const before = await listTotal(page)
   await page.evaluate(() => {
-    const key = 'semaforo-alerta:incidents:v3'
+    const key = 'semaforo-alerta:incidents:v4'
     const list = JSON.parse(localStorage.getItem(key))
     const newest = list.reduce((a, b) => (new Date(b.createdAt) > new Date(a.createdAt) ? b : a))
     newest.flags = 2
@@ -181,4 +181,23 @@ test('filters by fault type and "Mis reportes"', async ({ page }) => {
   const total = await listTotal(page)
   expect(total).toBeGreaterThan(0)
   await expect(page.locator('.card .tag', { hasText: 'Apagado o Sin luz' })).toHaveCount(Math.min(total, 20))
+})
+
+test('the welcome guide can be reopened from "Acerca de"', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: 'Acerca de' }).click()
+  await page.getByRole('button', { name: /Ver la guía de bienvenida/ }).click()
+  await expect(page.getByText('¿Has visto un semáforo malogrado?')).toBeVisible()
+  await expect(page.getByText(/Publica y guarda tu código/)).toBeVisible()
+})
+
+test('demo data includes reports outside Lima with their own codes', async ({ page }) => {
+  await page.goto('/')
+  await page.getByRole('button', { name: /Lista/ }).click()
+  await openListFilters(page)
+  await page.getByLabel('Departamento').selectOption('AREQUIPA')
+  await expect(page.locator('.card').first()).toBeVisible()
+  const codes = await page.locator('.card .tag-code').allInnerTexts()
+  expect(codes.length).toBeGreaterThan(0)
+  for (const c of codes) expect(c.trim()).toMatch(/^ARE-/)
 })

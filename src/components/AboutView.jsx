@@ -1,6 +1,6 @@
 // Sección "Acerca de": qué es el proyecto, por qué existe, cómo funciona,
 // quién lo hizo y hacia dónde va.
-import { FiCamera, FiMap, FiActivity, FiBarChart2, FiMail, FiGithub, FiLinkedin, FiGlobe } from 'react-icons/fi'
+import { FiCamera, FiMap, FiActivity, FiBarChart2, FiMail, FiGithub, FiLinkedin, FiGlobe, FiPlayCircle } from 'react-icons/fi'
 
 // Datos del creador. Deja en '' cualquier enlace que no quieras mostrar.
 const CREATOR = {
@@ -83,7 +83,7 @@ function CreatorLinks({ creator }) {
 }
 
 // Se muestra dentro de un modal (drawer), no como vista a pantalla completa.
-export default function AboutView() {
+export default function AboutView({ onShowGuide }) {
   return (
       <div className="about">
         <h1 className="about-hero">SemáforoAlerta 🚦</h1>
@@ -123,6 +123,13 @@ export default function AboutView() {
               </div>
             ))}
           </div>
+          {/* La guía de bienvenida se muestra una sola vez por navegador; desde
+              acá se puede volver a ver cuando se quiera. */}
+          {onShowGuide && (
+            <button type="button" className="btn about-guide-btn" onClick={onShowGuide}>
+              <FiPlayCircle /> Ver la guía de bienvenida
+            </button>
+          )}
         </AboutSection>
 
         <AboutSection title="Quién está detrás" plain>

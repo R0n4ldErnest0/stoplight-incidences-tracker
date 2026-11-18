@@ -609,7 +609,15 @@ export default function App() {
           />
         )}
 
-        {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+        {showAbout && (
+          <AboutModal
+            onClose={() => setShowAbout(false)}
+            onShowGuide={() => {
+              setShowAbout(false)
+              setShowOnboarding(true)
+            }}
+          />
+        )}
 
         {showOnboarding && (
           <OnboardingModal

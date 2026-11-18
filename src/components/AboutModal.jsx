@@ -3,7 +3,7 @@ import { useBackClose } from '../useBackClose.js'
 import AboutView from './AboutView.jsx'
 
 // "Acerca de" como modal; el botón "atrás" del teléfono también lo cierra.
-export default function AboutModal({ onClose }) {
+export default function AboutModal({ onClose, onShowGuide }) {
   useBackClose(onClose)
   return (
     <div className="overlay" onClick={onClose}>
@@ -13,7 +13,7 @@ export default function AboutModal({ onClose }) {
           <button className="icon-btn" onClick={onClose} aria-label="Cerrar"><FiX /></button>
         </div>
         <div className="drawer-body">
-          <AboutView />
+          <AboutView onShowGuide={onShowGuide} />
         </div>
       </div>
     </div>

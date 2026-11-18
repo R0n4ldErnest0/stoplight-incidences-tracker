@@ -8,7 +8,8 @@ import { makeIncidentCode } from './incidentCode.js'
 
 // Cambiar la clave recarga el seed. v2: datos demo ampliados (seed.js
 // generado). v3: códigos con abreviaturas únicas de distrito (SB, SI, VES...).
-const STORAGE_KEY = 'semaforo-alerta:incidents:v3'
+// v4: 250 reportes demo, algunos fuera de Lima.
+const STORAGE_KEY = 'semaforo-alerta:incidents:v4'
 
 function load() {
   try {
