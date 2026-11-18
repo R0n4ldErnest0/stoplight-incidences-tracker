@@ -220,7 +220,7 @@ export default function DashboardView({ incidents, onSelect }) {
         >
           <div className="oldest">
             {d.oldestUnresolved.length === 0 && (
-              <p className="dash-sub">No hay incidencias activas. 🎉</p>
+              <p className="dash-sub">No hay incidencias activas</p>
             )}
             {d.oldestUnresolved.map((inc) => {
               const age = ageDays(inc)

@@ -47,7 +47,7 @@ export default function ReportSuccess({ incident, onClose, onView }) {
     <div className="overlay" onClick={onClose}>
       <div className="drawer report-success" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
-          <h2><FiCheckCircle className="success-icon" /> ¡Reporte publicado!</h2>
+          <h2><FiCheckCircle className="success-icon" /> Reporte publicado</h2>
           <button className="icon-btn" onClick={onClose} aria-label="Cerrar"><FiX /></button>
         </div>
         <div className="drawer-body">
@@ -63,11 +63,11 @@ export default function ReportSuccess({ incident, onClose, onView }) {
           <div className="success-actions">
             {incident.code && (
               <button type="button" className="btn" onClick={copyCode}>
-                <FiCopy /> {copied ? '¡Copiado!' : 'Copiar código'}
+                <FiCopy /> {copied ? 'Copiado' : 'Copiar código'}
               </button>
             )}
             <button type="button" className="btn" onClick={share}>
-              <FiShare2 /> {linkCopied ? '¡Link copiado!' : 'Compartir'}
+              <FiShare2 /> {linkCopied ? 'Link copiado' : 'Compartir'}
             </button>
           </div>
           <p className="help">

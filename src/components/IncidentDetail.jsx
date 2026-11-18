@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiEyeOff, FiTrash2 } from 'react-icons/fi'
+import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiEyeOff, FiTrash2, FiCheck } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
@@ -207,7 +207,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
               </a>
             ))}
             <button type="button" className="btn btn-sm" onClick={share}>
-              <FiShare2 /> {copied ? '¡Link copiado!' : 'Compartir'}
+              <FiShare2 /> {copied ? 'Link copiado' : 'Compartir'}
             </button>
           </div>
           {photos.length > 0 && (
@@ -221,9 +221,10 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           {!incident.removedAt && <div className="report-abuse">
             {flagged ? (
               <span className="report-abuse-done">
+                <FiCheck />{' '}
                 {justFlagged
-                  ? '✓ Gracias. Un revisor lo verificará.'
-                  : '✓ Ya reportaste este contenido · en revisión'}
+                  ? 'Gracias. Un revisor lo verificará.'
+                  : 'Ya reportaste este contenido · en revisión'}
               </span>
             ) : (
               <button

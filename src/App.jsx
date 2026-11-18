@@ -291,7 +291,7 @@ export default function App() {
             className="source-pill"
             title="Datos de demostración en este navegador — no se comparten ni son reales"
           >
-            🟡 Demo
+            <span className="source-dot" aria-hidden="true" /> Demo
           </span>
         )}
         <div className="spacer" />
@@ -353,8 +353,13 @@ export default function App() {
             </button>
           </div>
         ) : (
-          <button className="btn btn-sm btn-primary" onClick={() => setShowAuth(true)}>
-            <FiLock /> Modo autoridad
+          <button
+            className="btn btn-sm auth-btn"
+            onClick={() => setShowAuth(true)}
+            aria-label="Modo autoridad"
+            title="Modo autoridad"
+          >
+            <FiLock /> <span className="auth-label">Modo autoridad</span>
           </button>
         )}
       </header>

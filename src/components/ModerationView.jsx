@@ -1,4 +1,4 @@
-import { FiFlag, FiEyeOff, FiTrash2 } from 'react-icons/fi'
+import { FiFlag, FiEyeOff, FiTrash2, FiImage } from 'react-icons/fi'
 import ModerationActions, { removalReasonLabel } from './ModerationActions.jsx'
 
 function fmtDate(iso) {
@@ -10,7 +10,7 @@ function StaffCard({ incident, onSelect, onChanged, children }) {
     <div className="staff-card">
       <button type="button" className="staff-card-main" onClick={() => onSelect(incident.id)}>
         <div className="staff-thumb">
-          {incident.photo ? <img src={incident.photo} alt="" /> : <span>🚦</span>}
+          {incident.photo ? <img src={incident.photo} alt="" /> : <FiImage aria-label="Sin foto" />}
         </div>
         <div className="staff-card-body">
           <strong>{incident.title}</strong>
@@ -44,7 +44,7 @@ export default function ModerationView({ incidents, onSelect, onChanged }) {
           reportes salen de la vista por defecto hasta que decidas.
         </p>
         {pending.length === 0 ? (
-          <div className="list-empty staff-empty">No hay reportes pendientes. 🎉</div>
+          <div className="list-empty staff-empty">No hay reportes pendientes</div>
         ) : (
           pending.map((inc) => (
             <StaffCard key={inc.id} incident={inc} onSelect={onSelect} onChanged={onChanged}>

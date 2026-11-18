@@ -86,7 +86,7 @@ function CreatorLinks({ creator }) {
 export default function AboutView({ onShowGuide }) {
   return (
       <div className="about">
-        <h1 className="about-hero">SemáforoAlerta 🚦</h1>
+        <h1 className="about-hero">SemáforoAlerta</h1>
 
         <AboutSection title="Qué es">
           <p className="about-text">

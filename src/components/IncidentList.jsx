@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { FiCamera, FiCalendar, FiRefreshCw, FiClock, FiFlag, FiEyeOff, FiHash, FiUser, FiChevronDown } from 'react-icons/fi'
+import { FiCamera, FiCalendar, FiRefreshCw, FiClock, FiFlag, FiEyeOff, FiHash, FiUser, FiChevronDown, FiImage } from 'react-icons/fi'
 import { STATUSES, FAULT_TYPES } from '../constants.js'
 import { ageDays } from '../data/store.js'
 import StatusBadge from './StatusBadge.jsx'
@@ -57,7 +57,7 @@ export default function IncidentList({ incidents, onSelect, myIds, pageKey, filt
                 {inc.photo ? (
                   <img src={inc.photo} alt="" loading="lazy" decoding="async" />
                 ) : (
-                  <span className="card-thumb-empty">🚦</span>
+                  <span className="card-thumb-empty" aria-label="Sin foto"><FiImage /></span>
                 )}
                 {inc.photos?.length > 1 && (
                   <span className="thumb-count"><FiCamera /> {inc.photos.length}</span>

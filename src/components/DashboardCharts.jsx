@@ -258,7 +258,7 @@ export function DistrictBubbleMap({ districts }) {
   const touch = typeof window !== 'undefined' && 'ontouchstart' in window
 
   if (!withPending.length) {
-    return <p className="dash-sub">No hay reportes pendientes en ningún distrito. 🎉</p>
+    return <p className="dash-sub">No hay reportes pendientes en ningún distrito</p>
   }
 
   return (
