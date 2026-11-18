@@ -6,8 +6,9 @@ import { distanceMeters, computeStats } from './helpers.js'
 import { HIDE_THRESHOLD } from '../constants.js'
 import { makeIncidentCode } from './incidentCode.js'
 
-// v2: datos demo ampliados (seed.js generado); cambiar la clave recarga el seed.
-const STORAGE_KEY = 'semaforo-alerta:incidents:v2'
+// Cambiar la clave recarga el seed. v2: datos demo ampliados (seed.js
+// generado). v3: códigos con abreviaturas únicas de distrito (SB, SI, VES...).
+const STORAGE_KEY = 'semaforo-alerta:incidents:v3'
 
 function load() {
   try {
@@ -33,7 +34,7 @@ function withCodes(incidents) {
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
     .forEach((i) => {
       i.number = next++
-      i.code = makeIncidentCode(i.departamento, i.district, i.number)
+      i.code = makeIncidentCode(i.departamento, i.provincia, i.district, i.number)
     })
   save(incidents)
   return incidents
@@ -86,7 +87,7 @@ export async function createIncident(input) {
   const incident = {
     id: genId(),
     number,
-    code: makeIncidentCode(input.departamento, district, number),
+    code: makeIncidentCode(input.departamento, input.provincia, district, number),
     title: input.title?.trim() || 'Semáforo sin nombre de cruce',
     description: input.description?.trim() || '',
     faultType: input.faultType || 'otro',

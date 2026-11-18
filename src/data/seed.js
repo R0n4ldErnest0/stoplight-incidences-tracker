@@ -159,7 +159,7 @@ function generateSeed() {
   // Código público: número correlativo por fecha de creación, como en la BD.
   byAge.forEach((inc, i) => {
     inc.number = i + 1
-    inc.code = makeIncidentCode(inc.departamento, inc.district, inc.number)
+    inc.code = makeIncidentCode(inc.departamento, inc.provincia, inc.district, inc.number)
   })
 
   return incidents

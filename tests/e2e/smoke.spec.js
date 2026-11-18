@@ -121,7 +121,7 @@ test('a flagged report shows a badge, remembers the flag, and hides at 2 flags',
   // demo, sobre el reporte más reciente (el que marcamos).
   const before = await listTotal(page)
   await page.evaluate(() => {
-    const key = 'semaforo-alerta:incidents:v2'
+    const key = 'semaforo-alerta:incidents:v3'
     const list = JSON.parse(localStorage.getItem(key))
     const newest = list.reduce((a, b) => (new Date(b.createdAt) > new Date(a.createdAt) ? b : a))
     newest.flags = 2
@@ -140,7 +140,7 @@ test('cards show a public code and the search finds a report by its number', asy
   await page.goto('/')
   await page.getByRole('button', { name: /Lista/ }).click()
   const code = (await page.locator('.card .tag-code').first().innerText()).trim()
-  expect(code).toMatch(/^[A-Z]{3}-[A-Z]{2,3}-\d{6}$/)
+  expect(code).toMatch(/^[A-Z]{3}-[A-Z0-9]{2,4}-\d{6}$/)
   const number = String(Number(code.split('-')[2]))
   // Solo el número (sin ceros) basta para encontrarlo.
   await page.getByLabel('Buscar reportes').fill(number)
