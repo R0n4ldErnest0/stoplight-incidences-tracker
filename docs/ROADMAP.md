@@ -5,6 +5,12 @@ historial de git.
 
 ## Panel de Transparencia
 
+- [ ] **Tarjetas en rojo según el desempeño de la autoridad** (pendiente de decisión,
+  2026-11-18). Colorear solo cuando el valor indica mal desempeño, con el umbral explicado
+  en el «?» de cada tarjeta. Propuesta: tasa de resolución < 50 %, tasa de respuesta < 70 %,
+  promedio de días > 30, sin resolver > mitad del total. Falta decidir los umbrales y si
+  también se usa verde cuando va bien (resolución ≥ 80 %, respuesta ≥ 90 %, ≤ 7 días).
+
 Aprobado, pendiente de implementar:
 
 - [ ] **Tipos de falla como barra segmentada** (una barra horizontal dividida en partes de
