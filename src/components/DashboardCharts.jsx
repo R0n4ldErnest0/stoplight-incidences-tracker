@@ -293,8 +293,8 @@ export function DistrictBubbleMap({ districts }) {
       </div>
       <figcaption className="chart-caption">
         El tamaño de cada círculo indica cuántos reportes siguen sin resolver en el
-        distrito. Pasa el cursor (o toca) un círculo para ver el detalle; la tabla de
-        abajo tiene todos los números.
+        distrito. Pasa el cursor (o toca) un círculo para ver el detalle; en «Ver tabla
+        por distrito» están todos los números.
       </figcaption>
     </figure>
   )

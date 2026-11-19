@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiEyeOff, FiTrash2, FiCheck } from 'react-icons/fi'
+import { FiX, FiFlag, FiAlertTriangle, FiExternalLink, FiShare2, FiEyeOff, FiTrash2, FiCheck, FiCheckCircle } from 'react-icons/fi'
 import { FaWhatsapp } from 'react-icons/fa'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
 import { updateStatus, flagIncident, ageDays } from '../data/store.js'
@@ -39,7 +39,8 @@ function rememberFlagged(id) {
   if (!ids.includes(id)) localStorage.setItem(FLAGGED_KEY, JSON.stringify([...ids, id]))
 }
 
-export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }) {
+// `justCreated`: se acaba de publicar (se abre directo aquí, con el aviso verde).
+export default function IncidentDetail({ incident, isAdmin, justCreated, onClose, onChanged }) {
   const age = ageDays(incident)
   const gmaps = `https://www.google.com/maps/search/?api=1&query=${incident.lat},${incident.lng}`
   // Línea de ubicación: Distrito, Provincia, Departamento (lo que exista).
@@ -136,6 +137,11 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
           <button className="icon-btn" onClick={close} aria-label="Cerrar"><FiX /></button>
         </div>
         <div className="drawer-body">
+          {justCreated && (
+            <div className="success-banner" role="status">
+              <FiCheckCircle /> Reporte publicado
+            </div>
+          )}
           {photos.length > 0 ? (
             <div className={photos.length > 1 ? 'detail-gallery' : ''}>
               {photos.map((src, i) => (
@@ -156,8 +162,6 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
               <span className="age-flag"><FiAlertTriangle /> {age} días sin resolver</span>
             )}
           </div>
-
-          <IncidentCode incident={incident} />
 
           {/* Aviso público: cualquiera ve que el reporte fue marcado y está en
               revisión (transparencia también en la moderación). */}
@@ -185,6 +189,7 @@ export default function IncidentDetail({ incident, isAdmin, onClose, onChanged }
             </div>
           )}
 
+          <IncidentCode incident={incident} />
           <p className="detail-meta"><b>Falla:</b> {faultLabel(incident.faultType)}</p>
           {lugar && <p className="detail-meta"><b>Ubicación:</b> {lugar}</p>}
           <p className="detail-meta"><b>Reportado:</b> {fmtDate(incident.createdAt)} ({age} días)</p>

@@ -756,9 +756,9 @@ button svg,
   border-radius: 14px;
   padding: 16px;
 }
-/* Cifras siempre en el color de texto: el color de estado vive en las barras y
-   gráficos, no en los números (algunas tarjetas traen un color en línea). */
-.metric-value { font-size: 30px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text) !important; }
+/* Las tarjetas de alerta traen su color en línea (rojo = sin resolver,
+   verde = resueltos), igual que en la versión principal. */
+.metric-value { font-size: 30px; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
 .metric-label { margin-top: 8px; font-size: 13px; color: var(--text); }
 .metric-sub { margin-top: 2px; font-size: 11px; color: var(--muted); }
 
@@ -792,7 +792,30 @@ button svg,
 }
 .oldest-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 
-/* District table */
+/* District table (plegable bajo el mapa de burbujas) */
+.district-details { margin-top: 12px; }
+.district-details > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  transition: background 150ms var(--ease);
+}
+.district-details > summary::-webkit-details-marker { display: none; }
+.district-details > summary:hover { background: var(--panel-2); }
+.district-details-icon { color: var(--muted); transition: transform 180ms var(--ease); }
+.district-details[open] > summary { margin-bottom: 12px; }
+.district-details[open] .district-details-icon { transform: rotate(180deg); }
 .district-table {
   background: var(--panel);
   border: 1px solid var(--border);
@@ -1203,25 +1226,12 @@ button svg,
 .dash-section-row .dash-section { display: inline-flex; align-items: center; gap: 8px; }
 
 /* ---------- Código público del reporte (LIM-MIR-000123) ---------- */
-.incident-code { margin: 0 0 12px; }
-.incident-code-row { display: flex; align-items: center; gap: 2px; }
-.code-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
-  color: var(--text);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 4px 8px;
-}
-.code-pill svg { color: var(--muted); }
-.incident-code.large .code-pill { font-size: 20px; padding: 8px 16px; border-color: var(--accent); }
-.incident-code .how-box { margin: 8px 0 0; }
+/* En el detalle es un campo más ("Código: …"), en mono para leerlo y dictarlo. */
+.incident-code-row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.incident-code-row b { margin-right: 2px; }
+.incident-code-row .help-btn { margin: -4px 0; }
+.code-text { font-family: var(--mono); font-weight: 600; color: var(--text); letter-spacing: 0.02em; }
+.incident-code .how-box { margin: 0 0 8px; }
 .tag-code {
   font-family: var(--mono);
   font-weight: 600;
@@ -1229,12 +1239,20 @@ button svg,
 }
 .tag-mine { background: #e0f2fe; border-color: #7dd3fc; color: var(--accent-strong); font-weight: 600; }
 
-/* Confirmación al publicar */
-.report-success .drawer-head h2 { display: inline-flex; align-items: center; gap: 8px; }
-.success-icon { color: #16a34a; font-size: 22px; }
-.success-lead { margin: 0 0 12px; }
-.success-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; }
-.report-success .btn-block { margin-top: 16px; }
+/* Aviso al abrir el detalle recién publicado */
+.success-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  color: #166534;
+  font-size: 14px;
+  font-weight: 600;
+}
 
 /* ---------- Lista: buscador + filtros ---------- */
 .list-toolbar {
