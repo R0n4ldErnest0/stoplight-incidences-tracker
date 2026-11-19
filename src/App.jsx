@@ -3,7 +3,6 @@ import { FiMap, FiList, FiBarChart2, FiInfo, FiLock, FiPlus, FiCalendar, FiEyeOf
 import MapView from './components/MapView.jsx'
 import IncidentList from './components/IncidentList.jsx'
 import ListToolbar from './components/ListToolbar.jsx'
-import ReportSuccess from './components/ReportSuccess.jsx'
 import DashboardView from './components/DashboardView.jsx'
 import ModerationView from './components/ModerationView.jsx'
 import ManageView from './components/ManageView.jsx'
@@ -119,7 +118,8 @@ export default function App() {
   // "Mis reportes": ids guardados en este dispositivo (ver data/myReports.js).
   const [myReportIds, setMyReportIds] = useState(() => getMyReportIds())
   // Reporte recién publicado: muestra la confirmación con su código.
-  const [createdIncident, setCreatedIncident] = useState(null)
+  // Reporte recién publicado: su detalle se abre directo con el aviso verde.
+  const [justCreatedId, setJustCreatedId] = useState(null)
   // 'map' | 'list' | 'dashboard' | solo revisores: 'moderation' | 'manage'
   const [view, setView] = useState('map')
   const [loading, setLoading] = useState(true)
@@ -291,7 +291,7 @@ export default function App() {
             className="source-pill"
             title="Datos de demostración en este navegador — no se comparten ni son reales"
           >
-            🟡 Demo
+            <span className="source-dot" aria-hidden="true" /> Demo
           </span>
         )}
         <div className="spacer" />
@@ -353,8 +353,13 @@ export default function App() {
             </button>
           </div>
         ) : (
-          <button className="btn btn-sm btn-primary" onClick={() => setShowAuth(true)}>
-            <FiLock /> Modo autoridad
+          <button
+            className="btn btn-sm auth-btn"
+            onClick={() => setShowAuth(true)}
+            aria-label="Modo autoridad"
+            title="Modo autoridad"
+          >
+            <FiLock /> <span className="auth-label">Modo autoridad</span>
           </button>
         )}
       </header>
@@ -576,18 +581,8 @@ export default function App() {
               setMyReportIds(getMyReportIds())
               setShowReport(false)
               refresh()
-              setCreatedIncident(inc)
-            }}
-          />
-        )}
-
-        {createdIncident && (
-          <ReportSuccess
-            incident={createdIncident}
-            onClose={() => setCreatedIncident(null)}
-            onView={() => {
-              setCreatedIncident(null)
-              setSelectedId(createdIncident.id)
+              setJustCreatedId(inc.id)
+              setSelectedId(inc.id)
             }}
           />
         )}
@@ -596,7 +591,11 @@ export default function App() {
           <IncidentDetail
             incident={selected}
             isAdmin={authState.isReviewer}
-            onClose={() => setSelectedId(null)}
+            justCreated={selected.id === justCreatedId}
+            onClose={() => {
+              setSelectedId(null)
+              setJustCreatedId(null)
+            }}
             onChanged={() => refresh()}
           />
         )}

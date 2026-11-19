@@ -1,5 +1,5 @@
 import { useId, useMemo, useState } from 'react'
-import { FiClock, FiHelpCircle } from 'react-icons/fi'
+import { FiChevronDown, FiClock, FiHelpCircle } from 'react-icons/fi'
 import { computeDashboard, computeMonthlyTrend, computeAgeBands, ageDays } from '../data/helpers.js'
 import { TrendChart, AgeHistogram, DistrictBubbleMap } from './DashboardCharts.jsx'
 import { STATUSES, STATUS_ORDER, FAULT_TYPES } from '../constants.js'
@@ -220,7 +220,7 @@ export default function DashboardView({ incidents, onSelect }) {
         >
           <div className="oldest">
             {d.oldestUnresolved.length === 0 && (
-              <p className="dash-sub">No hay incidencias activas. 🎉</p>
+              <p className="dash-sub">No hay incidencias activas</p>
             )}
             {d.oldestUnresolved.map((inc) => {
               const age = ageDays(inc)
@@ -258,6 +258,12 @@ export default function DashboardView({ incidents, onSelect }) {
           }
         >
           <DistrictBubbleMap districts={d.byDistrict} />
+          {/* La tabla es larga (un renglón por distrito): plegada por defecto. */}
+          <details className="district-details">
+            <summary>
+              <FiChevronDown className="district-details-icon" aria-hidden="true" />
+              Ver tabla por distrito ({d.byDistrict.length})
+            </summary>
           <div className="district-table">
             <div className="district-head">
               <span>Distrito</span>
@@ -281,6 +287,7 @@ export default function DashboardView({ incidents, onSelect }) {
               </div>
             ))}
           </div>
+          </details>
         </Section>
 
         {/* Tipos de falla: histograma para ver de un vistazo cuáles se repiten más. */}

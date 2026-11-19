@@ -35,7 +35,7 @@ export default function OnboardingModal({ onClose, onMoreInfo }) {
     <div className="overlay" onClick={onClose}>
       <div className="drawer" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-body onboarding">
-          <h1 className="about-hero" style={{ fontSize: 22 }}>¿Has visto un semáforo malogrado? 🚦</h1>
+          <h1 className="about-hero" style={{ fontSize: 22 }}>¿Has visto un semáforo malogrado?</h1>
           <p className="about-lead" style={{ fontSize: 14 }}>
             Repórtalo en 4 simples pasos:
           </p>

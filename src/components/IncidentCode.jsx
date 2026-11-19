@@ -1,19 +1,41 @@
 import { useId, useState } from 'react'
-import { FiHelpCircle, FiHash } from 'react-icons/fi'
+import { FiHelpCircle, FiCopy, FiCheck } from 'react-icons/fi'
 import { explainCode } from '../data/incidentCode.js'
 
-// Código público del reporte con su "?" que explica qué significa cada parte.
+// Código público del reporte como un campo más del detalle ("Código: …"),
+// con botón para copiarlo y un "?" que explica qué significa cada parte.
 // (En las tarjetas de la lista se muestra solo el texto: la tarjeta entera es
 // un botón y no puede llevar otro botón adentro.)
-export default function IncidentCode({ incident, large }) {
+export default function IncidentCode({ incident }) {
   const [open, setOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
   const id = useId()
   if (!incident.code) return null
   const e = explainCode(incident)
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(incident.code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      window.prompt('Copia el código del reporte:', incident.code)
+    }
+  }
+
   return (
-    <div className={large ? 'incident-code large' : 'incident-code'}>
-      <div className="incident-code-row">
-        <span className="code-pill"><FiHash /> {incident.code}</span>
+    <div className="incident-code">
+      <div className="detail-meta incident-code-row">
+        <b>Código:</b> <span className="code-text">{incident.code}</span>
+        <button
+          type="button"
+          className="help-btn"
+          onClick={copy}
+          aria-label={copied ? 'Código copiado' : 'Copiar código'}
+          title={copied ? 'Copiado' : 'Copiar código'}
+        >
+          {copied ? <FiCheck /> : <FiCopy />}
+        </button>
         <button
           type="button"
           className={open ? 'help-btn open' : 'help-btn'}
