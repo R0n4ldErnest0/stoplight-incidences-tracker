@@ -148,7 +148,7 @@ export default function DashboardView({ incidents, onSelect }) {
           />
           <Metric
             value={d.avgDays != null ? `${d.avgDays}` : '—'}
-            label="Días prom. a resolver"
+            label="Promedio días para resolución"
             sub={d.avgDays == null ? 'sin datos aún' : undefined}
             help={
               d.avgDays == null
